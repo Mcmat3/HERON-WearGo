@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#09090b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>HERON WearGo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #121216;
+    --surface-2: #1a1a20;
+    --border: #27272a;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #ffffff;
+    --accent-inv: #09090b;
+    --brand: #6366f1;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --ok: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+
+  svg.ico { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  svg.ico-sm { width: 14px; height: 14px; }
+
+  header { padding: 11px 14px; background: rgba(9,9,11,0.92); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand-sep { width: 1px; height: 18px; background: var(--border); }
+  .brand-wordmark { font-family: "Outfit", -apple-system, sans-serif; font-size: 15px; letter-spacing: 0.6px; display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+  .brand-wordmark .w-heron { font-weight: 700; color: #fff; }
+  .brand-wordmark .w-go { font-weight: 400; color: var(--muted); font-size: 14px; letter-spacing: 0.3px; }
+
+  .header-right { display: flex; align-items: center; gap: 5px; }
+  .weather-pill { display: flex; align-items: center; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); padding: 4px 8px; border-radius: 99px; font-size: 11px; color: var(--text); cursor: pointer; white-space: nowrap; }
+  .lang-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); padding: 4px 7px; border-radius: 99px; font-size: 10px; font-weight: 600; cursor: pointer; }
+  .lang-btn:hover { color: var(--text); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .sync-dot.ok { background: var(--ok); box-shadow: 0 0 6px rgba(16,185,129,0.6); }
+  .sync-dot.busy { background: var(--warn); }
+
+  main { flex: 1; padding: 14px 14px 88px; overflow-y: auto; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(18,18,22,0.96); backdrop-filter: blur(14px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 4px 14px; z-index: 30; }
+  nav button { background: none; border: none; color: var(--muted); font-size: 10px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 4px 10px; border-radius: 10px; transition: 0.15s; }
+  nav button.active { color: var(--text); }
+
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .row-gap { display: flex; align-items: center; gap: 6px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; position: relative; transition: 0.15s; }
+  .card.washing { opacity: 0.52; filter: grayscale(0.9); border-color: rgba(245,158,11,0.6); }
+  .card-media { position: relative; width: 100%; aspect-ratio: 1/1; background: #0d0d11; overflow: hidden; }
+  .card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-body { padding: 10px; }
+  .card-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 6px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .pill.match { background: rgba(16,185,129,0.14); color: var(--ok); border-color: rgba(16,185,129,0.35); }
+
+  .overlay-top-left { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .overlay-top-right { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+  .badge-float { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px; font-size: 10px; font-weight: 700; backdrop-filter: blur(8px); }
+  .badge-wash { background: rgba(245,158,11,0.92); color: #09090b; }
+  .badge-alert { background: rgba(239,68,68,0.92); color: #fff; }
+  .badge-season { background: rgba(9,9,11,0.78); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
+
+  .icon-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(9,9,11,0.72); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); }
+  .icon-btn.fav-on { color: #f43f5e; border-color: rgba(244,63,94,0.4); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent); color: var(--accent-inv); border: none; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.15s; }
+  .btn:active { transform: scale(0.98); }
+  .btn-brand { background: var(--brand); color: #fff; }
+  .btn-sec { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 6px 10px; font-size: 11px; width: auto; border-radius: 8px; }
+  .btn-danger { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+
+  input, select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 10px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--muted); }
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  .search-wrap { position: relative; margin-bottom: 8px; }
+  .search-wrap input { padding-left: 34px; margin-bottom: 0; }
+  .search-wrap .s-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 6px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 6px 11px; border-radius: 99px; font-size: 11px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+  .chip.active { background: var(--accent); color: var(--accent-inv); border-color: var(--accent); font-weight: 600; }
+
+  .seg { display: flex; background: var(--surface); padding: 3px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
+  .seg button { flex: 1; background: none; border: none; color: var(--muted); padding: 7px 4px; border-radius: 7px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .seg button.active { background: var(--surface-2); color: var(--text); }
+
+  .ai-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; }
+  .mini-row { display: flex; gap: 8px; margin: 10px 0; overflow-x: auto; }
+  .mini-item { width: 58px; flex-shrink: 0; text-align: center; }
+  .mini-item img { width: 58px; height: 58px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+  .mini-item span { display: block; font-size: 9px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 50; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 18px; max-height: 92vh; overflow-y: auto; border-top: 1px solid var(--border); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .modal-head h3 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+  .photo-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .photo-slot { border: 1px dashed var(--border); border-radius: 12px; padding: 10px; text-align: center; background: var(--bg); position: relative; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .photo-slot img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; }
+  .slot-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; }
+
+  .crop-stage { width: 260px; height: 260px; margin: 0 auto 12px; position: relative; overflow: hidden; border-radius: 14px; border: 2px solid var(--accent); background: #000; touch-action: none; cursor: grab; }
+  .crop-stage:active { cursor: grabbing; }
+  .crop-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(to right, rgba(255,255,255,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.18) 1px, transparent 1px); background-size: 33.33% 33.33%; }
+
+  #cameraVideo { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 14px; background: #000; margin-bottom: 12px; }
+
+  .avatar-stage { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px; margin-bottom: 12px; }
+  .avatar-frame { width: 100%; min-height: 220px; max-height: 320px; border-radius: 10px; overflow: hidden; background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; text-align: center; padding: 4px; }
+  .avatar-frame img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 36px 16px; font-size: 13px; line-height: 1.5; }
+  .box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
+
+  .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; margin: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 99px; transition: 0.2s; }
+  .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background: var(--muted); border-radius: 50%; transition: 0.2s; }
+  input:checked + .slider { background: var(--brand); border-color: var(--brand); }
+  input:checked + .slider:before { transform: translateX(16px); background: #fff; }
+
+  .pack-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; margin-bottom: 6px; cursor: pointer; }
+  .pack-row.done { opacity: 0.48; text-decoration: line-through; }
+  .pack-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; }
+  .pack-row.done .pack-check { background: var(--ok); border-color: var(--ok); color: #09090b; font-weight: 800; }
+
+  .pick-card { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; background: var(--bg); transition: 0.12s; }
+  .pick-card.picked { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
+  .pick-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+  .pick-card div { font-size: 10px; padding: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+
+  .cat-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .cat-setting-row:last-child { border-bottom: none; }
+
+  #installBanner { display: none; background: rgba(99,102,241,0.14); border: 1px solid rgba(99,102,241,0.4); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; align-items: center; justify-content: space-between; gap: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span id="icoBrand"></span>
+    <span class="brand-sep"></span>
+    <span class="brand-wordmark"><span class="w-heron">HERON</span><span class="w-go">WearGo</span></span>
+  </div>
+  <div class="header-right">
+    <span id="headerSyncDot" class="sync-dot" title="Cloud Sync"></span>
+    <button class="weather-pill" id="weatherPill" onclick="openWeatherModal()">
+      <span id="weatherIco"></span>
+      <span id="weatherTemp">--°C</span>
+    </button>
+    <button class="lang-btn" id="langToggle" onclick="toggleLang()">EN</button>
+  </div>
+</header>
+
+<main>
+  <!-- PWA Install Banner (Android Chrome) -->
+  <div id="installBanner">
+    <div style="font-size:12px;"><strong>Install HERON WearGo</strong><div style="font-size:10px;color:var(--muted);">Add to Home Screen for full app experience</div></div>
+    <button class="btn btn-brand btn-sm" onclick="triggerPwaInstall()">Install</button>
+  </div>
+
+  <!-- 1. HOMEPAGE -->
+  <section id="tab-home" class="tab active">
+    <div class="row-between" style="margin-bottom:10px;">
+      <div>
+        <h2 style="font-size:15px;" data-i18n="homeTitle">Homepage</h2>
+        <div id="homeWeatherHint" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+      </div>
+      <div class="row-gap">
+        <button class="btn btn-sec btn-sm" onclick="openManualBuilder()">
+          <span id="icoBuildBtn"></span><span data-i18n="buildFitBtn">Build Fit</span>
+        </button>
+        <span id="outfitCount" class="pill">0</span>
+      </div>
+    </div>
+    <div class="chips" id="seasonFilters"></div>
+    <div id="outfitsGrid" class="grid-2"></div>
+  </section>
+
+  <!-- 2. FITTING ROOM -->
+  <section id="tab-wardrobe" class="tab">
+    <div class="row-between" style="margin-bottom:10px;">
+      <h2 style="font-size:15px;" data-i18n="fittingRoom">Fitting Room</h2>
+      <div class="row-gap">
+        <button class="btn btn-sec btn-sm" onclick="openInsightsModal()">
+          <span id="icoInsightsBtn"></span><span data-i18n="insights">Insights</span>
+        </button>
+        <button class="btn btn-sm" onclick="openAddModal()">
+          <span id="icoPlusBtn"></span><span data-i18n="addItem">Add</span>
+        </button>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="s-ico" id="icoSearch"></span>
+      <input id="wardrobeSearch" placeholder="Search name, color, notes..." oninput="renderWardrobe()">
+    </div>
+    <div class="chips" id="catFilters"></div>
+    <div id="wardrobeGrid" class="grid-2"></div>
+  </section>
+
+  <!-- 3. AI STYLIST (QUICK FIT + CHAT + PACK MY BAG) -->
+  <section id="tab-ai" class="tab">
+    <div class="seg">
+      <button id="segQuick" class="active" onclick="setAiMode('quick')" data-i18n="quickFit">Quick Fit</button>
+      <button id="segChat" onclick="setAiMode('chat')" data-i18n="aiChat">Stylist Chat</button>
+      <button id="segPack" onclick="setAiMode('pack')" data-i18n="packBag">Pack My Bag</button>
+    </div>
+
+    <div id="quickBox">
+      <label data-i18n="occasion">Occasion</label>
+      <div class="chips" id="occasionChips"></div>
+      <label data-i18n="extraNote">Specific vibe / constraints (optional)</label>
+      <input id="quickNote" placeholder="e.g. baggy silhouette, dark palette, warm layers...">
+      <button class="btn btn-brand" onclick="generateOutfits(true)" data-i18n="genTop3">Generate Top 3 Fits</button>
+    </div>
+
+    <div id="chatBox" style="display:none;">
+      <label data-i18n="describeFit">Describe what you want to wear</label>
+      <textarea id="chatPrompt" rows="3" placeholder="e.g. Streetwear outfit for evening walk in Prague, layered for cold weather..."></textarea>
+      <button class="btn btn-brand" onclick="generateOutfits(false)" data-i18n="buildOutfit">Build Outfit</button>
+    </div>
+
+    <div id="packBox" style="display:none;">
+      <div class="grid-2">
+        <div>
+          <label data-i18n="destination">Destination (City / Place)</label>
+          <input id="packDest" placeholder="e.g. Rovinj, Alps, London">
+        </div>
+        <div>
+          <label data-i18n="tripDays">Duration (Days)</label>
+          <input id="packDays" type="number" min="1" max="30" value="5">
+        </div>
+      </div>
+      <label data-i18n="tripVibe">Trip activities & notes</label>
+      <textarea id="packNotes" rows="2" placeholder="e.g. Skiing + evening pub, or beach + city walks, carry-on only..."></textarea>
+      <button class="btn btn-brand" onclick="generatePackingList()" data-i18n="packNow">Generate Packing List</button>
+    </div>
+
+    <div id="aiStatus" style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center;"></div>
+    <div id="aiResults"></div>
+  </section>
+
+  <!-- 4. PROFILE & CLOUD -->
+  <section id="tab-settings" class="tab">
+    <h2 style="font-size:15px;margin-bottom:12px;" data-i18n="profileSettings">Profile & Cloud</h2>
+
+    <!-- Cloud Account -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div class="row-between" style="margin-bottom:8px;">
+        <h3 style="font-size:13px;" data-i18n="cloudAccount">HERON Cloud Account</h3>
+        <span id="cloudStatusBadge" class="pill">Offline</span>
+      </div>
+      <div id="authLoggedOut">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px;" data-i18n="authHint">Sign in or create your own account to sync your wardrobe and unlock built-in HERON Cloud AI.</p>
+        <label>Email</label>
+        <input id="authEmail" type="email" placeholder="you@example.com">
+        <label data-i18n="password">Password</label>
+        <input id="authPassword" type="password" placeholder="••••••••">
+        <div class="row-gap">
+          <button class="btn btn-brand btn-sm" style="flex:1;" onclick="cloudSignIn()" data-i18n="signIn">Sign In</button>
+          <button class="btn btn-sec btn-sm" style="flex:1;" onclick="cloudSignUp()" data-i18n="signUp">Create Account</button>
+        </div>
+        <div id="authMsg" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
+      </div>
+      <div id="authLoggedIn" style="display:none;">
+        <div style="font-size:12px;margin-bottom:8px;">
+          <span style="color:var(--muted);" data-i18n="signedInAs">Signed in as:</span>
+          <strong id="authUserEmail"></strong>
+        </div>
+        <div class="row-gap">
+          <button class="btn btn-sec btn-sm" style="flex:1;" onclick="cloudPush(true)" data-i18n="syncNow">Sync Now</button>
+          <button class="btn btn-danger btn-sm" onclick="cloudSignOut()" data-i18n="signOut">Sign Out</button>
+        </div>
+        <div id="syncMsg" style="font-size:11px;color:var(--muted);margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Advanced Settings -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div class="row-between">
+        <div>
+          <h3 style="font-size:13px;" data-i18n="advSettings">Advanced Settings</h3>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;" data-i18n="advSub">Wear cycle / No-wash, custom categories, wear tracking</div>
+        </div>
+        <button class="btn btn-sec btn-sm" onclick="openAdvancedModal()" data-i18n="openBtn">Open</button>
+      </div>
+    </div>
+
+    <!-- Avatar Card (Full-body, NO CROP) -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div class="row-between" style="margin-bottom:10px;">
+        <h3 style="font-size:13px;" data-i18n="myAvatar">My Avatar</h3>
+        <span class="pill" data-i18n="optional">Optional</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div id="settingsAvatarThumb" style="width:74px;height:104px;border-radius:10px;background:var(--bg);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <p style="font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:8px;" data-i18n="avatarTip">Full-body photo (no crop needed, kept intact). Wear fitted sportswear for best proportion analysis.</p>
+          <div class="row-gap">
+            <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('avatar','camera')" data-i18n="camera">Camera</button>
+            <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('avatar','gallery')" data-i18n="gallery">Gallery</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body & Style Profile -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <h3 style="font-size:13px;margin-bottom:10px;" data-i18n="bodyPrefs">Body & Style Profile</h3>
+      <div class="grid-2">
+        <div>
+          <label data-i18n="gender">Gender</label>
+          <select id="profGender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Unisex">Unisex / Other</option>
+          </select>
+        </div>
+        <div>
+          <label data-i18n="age">Age</label>
+          <input id="profAge" type="number" value="17">
+        </div>
+      </div>
+      <label data-i18n="heightWeight">Height / Weight</label>
+      <input id="profBody" value="171 cm, 52 kg">
+      <label data-i18n="appearance">Hair / Eyes / Build</label>
+      <input id="profLook" value="Blond hair, lean build">
+      <label data-i18n="styleGoals">Style & Fit Goals</label>
+      <input id="profStyle" value="Baggy / Balloon jeans, heavy cotton, streetwear proportions">
+      <button class="btn btn-sm" onclick="saveSettings()" data-i18n="save">Save Profile</button>
+    </div>
+
+    <!-- AI Engine Status -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div class="row-between" style="margin-bottom:6px;">
+        <h3 style="font-size:13px;">AI Engine</h3>
+        <span id="modeBadge" class="pill">Demo Mode</span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);line-height:1.4;" id="aiEngineHint">Sign in to HERON Cloud above to automatically enable built-in Gemini AI (no API key needed).</p>
+    </div>
+
+    <!-- Backup Card -->
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div class="row-between" style="margin-bottom:8px;">
+        <h3 style="font-size:13px;" data-i18n="backupTitle">Local Backup (.json)</h3>
+        <span id="storageStats" class="pill">0 items</span>
+      </div>
+      <div class="row-gap">
+        <button class="btn btn-sec btn-sm" style="flex:1;" onclick="exportBackup()" data-i18n="exportBtn">Export JSON</button>
+        <button class="btn btn-sec btn-sm" style="flex:1;" onclick="triggerImportBackup()" data-i18n="importBtn">Import JSON</button>
+      </div>
+      <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none;" onchange="importBackup(event)">
+    </div>
+
+    <button class="btn btn-danger" onclick="resetDemo()" data-i18n="resetDemo">Reset Local Data</button>
+  </section>
+</main>
+
+<nav>
+  <button class="active" onclick="switchTab('home',this)"><span id="navHome"></span><span data-i18n="navHome">Home</span></button>
+  <button onclick="switchTab('wardrobe',this)"><span id="navRoom"></span><span data-i18n="navRoom">Fitting Room</span></button>
+  <button onclick="switchTab('ai',this)"><span id="navAi"></span><span data-i18n="navAi">Stylist</span></button>
+  <button onclick="switchTab('settings',this)"><span id="navProf"></span><span data-i18n="navProf">Profile</span></button>
+</nav>
+
+<input type="file" id="hiddenFileInput" accept="image/*" style="display:none;" onchange="onFileSelected(event)">
+
+<!-- MODAL: ADD / EDIT ITEM -->
+<div id="addModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="addModalHeader" data-i18n="addItemTitle">Add Clothing Piece</h3>
+      <button class="icon-btn" onclick="closeModal('addModal')">&times;</button>
+    </div>
+
+    <div class="photo-slots">
+      <div class="photo-slot">
+        <span class="slot-tag" data-i18n="frontRequired">1. Front (Main)</span>
+        <div id="frontPreviewWrap" style="width:100%;"></div>
+        <div class="row-gap">
+          <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('front','camera')" data-i18n="camera">Camera</button>
+          <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('front','gallery')" data-i18n="gallery">Gallery</button>
+        </div>
+      </div>
+      <div class="photo-slot">
+        <span class="slot-tag" data-i18n="backOptional">2. Back (Optional)</span>
+        <div id="backPreviewWrap" style="width:100%;"></div>
+        <div class="row-gap">
+          <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('back','camera')" data-i18n="camera">Camera</button>
+          <button class="btn btn-sec btn-sm" onclick="startPhotoCapture('back','gallery')" data-i18n="gallery">Gallery</button>
+        </div>
+        <button class="btn btn-sm" style="background:none;color:var(--muted);padding:2px;" onclick="clearBackDraft()" data-i18n="skipBack">Skip / Clear</button>
+      </div>
+    </div>
+
+    <button id="aiScanBtn" class="btn btn-brand" style="margin-bottom:12px;display:none;" onclick="analyzePhotoWithAI()" data-i18n="aiAutoFill">Auto-Fill Details with HERON AI</button>
+
+    <label data-i18n="itemName">Name</label>
+    <input id="itemName" placeholder="e.g. Nike Windrunner Jacket">
+
+    <div class="grid-2">
+      <div>
+        <div class="row-between">
+          <label data-i18n="category">Category</label>
+          <button style="background:none;border:none;color:var(--brand);font-size:10px;font-weight:600;cursor:pointer;margin-bottom:4px;" onclick="quickAddCategory()" data-i18n="newCatBtn">+ New</button>
+        </div>
+        <select id="itemCat" onchange="onItemCatChange()"></select>
+      </div>
+      <div>
+        <label data-i18n="size">Size</label>
+        <input id="itemSize" placeholder="M / W30 / EU 44">
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="row-between" style="margin-bottom:6px;">
+        <div>
+          <label style="margin:0;" data-i18n="thermalRating">Temperature Limit (Optional)</label>
+          <div style="font-size:10px;color:var(--muted);" id="thermalCatHint"></div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="itemUseThermal" onchange="toggleThermalFields()">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="thermalFieldsWrap" style="display:none;margin-top:8px;">
+        <div class="grid-2">
+          <div>
+            <label data-i18n="itemSeason">Season Tag</label>
+            <select id="itemSeason" onchange="applyPresetFromSeason()">
+              <option value="winter">Winter (Heavy)</option>
+              <option value="mid">Mid-Season (Windbreaker)</option>
+              <option value="autumn">Autumn / Spring</option>
+              <option value="summer">Summer (Light)</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="tempRange">From °C – To °C</label>
+            <div class="row-gap">
+              <input id="itemTempMin" type="number" placeholder="5" style="margin-bottom:0;">
+              <span style="color:var(--muted);">–</span>
+              <input id="itemTempMax" type="number" placeholder="18" style="margin-bottom:0;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label data-i18n="color">Color</label>
+        <input id="itemColor" placeholder="Black / Green">
+      </div>
+      <div>
+        <label data-i18n="style">Style</label>
+        <input id="itemStyle" placeholder="Streetwear / Sport">
+      </div>
+    </div>
+
+    <label data-i18n="notes">Notes (AI reads this!)</label>
+    <input id="itemNotes" placeholder="e.g. Thin windbreaker, graphic print on back">
+
+    <button class="btn" onclick="saveNewItem()" data-i18n="saveToWardrobe">Save to Fitting Room</button>
+  </div>
+</div>
+
+<!-- MODAL: ADVANCED SETTINGS -->
+<div id="advancedModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="advSettings">Advanced Settings</h3>
+      <button class="icon-btn" onclick="closeModal('advancedModal')">&times;</button>
+    </div>
+
+    <div class="box">
+      <div class="row-between">
+        <div>
+          <div style="font-size:13px;font-weight:600;" data-i18n="wearTrackTitle">Enable "Wear Today" Tracking</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;" data-i18n="wearTrackDesc">Shows Wear Today button on outfits, tracks usage history & suggests washing.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="advWearTrack" onchange="toggleAdvWearTrack()">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;" data-i18n="wearCycleTitle">Categories & Wear Cycle (Days)</h4>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:8px;" data-i18n="wearCycleDesc">Toggle "No wash" for jackets/coats you rarely wash (manual Washer button still works).</p>
+      <div id="advCatList"></div>
+    </div>
+
+    <div class="box">
+      <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;" data-i18n="addCustomCat">Add Custom Category</h4>
+      <input id="newCatName" placeholder="e.g. Swimwear, Thermal Base, Tracksuits">
+      <div class="grid-3" style="margin-bottom:10px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:5px;margin:0;text-transform:none;">
+          <input type="checkbox" id="newCatWashable" checked style="width:auto;margin:0;"> Washable
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;margin:0;text-transform:none;">
+          <input type="checkbox" id="newCatThermal" checked style="width:auto;margin:0;"> Temp limit
+        </label>
+        <input id="newCatDays" type="number" value="2" min="1" placeholder="Days" style="margin:0;padding:5px 8px;">
+      </div>
+      <button class="btn btn-sec btn-sm" style="width:100%;" onclick="addCustomCategoryFromAdv()" data-i18n="createCat">Add Category</button>
+    </div>
+
+    <div class="box">
+      <div class="row-between" style="margin-bottom:6px;">
+        <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);" data-i18n="styleMemory">AI Style Memory</h4>
+        <button class="btn btn-danger btn-sm" onclick="clearStyleMemory()">Clear</button>
+      </div>
+      <div id="styleMemoryList" style="font-size:11px;color:var(--muted);line-height:1.45;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANUAL OUTFIT BUILDER -->
+<div id="builderModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="manualBuilder">Build Outfit Manually</h3>
+      <button class="icon-btn" onclick="closeModal('builderModal')">&times;</button>
+    </div>
+    <label data-i18n="outfitName">Outfit Name</label>
+    <input id="buildName" placeholder="e.g. Daily Black & Denim">
+    <div class="grid-2">
+      <div>
+        <label data-i18n="occasion">Occasion</label>
+        <input id="buildOcc" value="Daily / School">
+      </div>
+      <div>
+        <label data-i18n="itemSeason">Season</label>
+        <select id="buildSeason">
+          <option value="winter">Winter (-10°–6°C)</option>
+          <option value="mid">Mid-Season (6°–16°C)</option>
+          <option value="autumn" selected>Autumn (7°–17°C)</option>
+          <option value="spring">Spring (10°–20°C)</option>
+          <option value="summer">Summer (19°–35°C)</option>
+        </select>
+      </div>
+    </div>
+    <label data-i18n="pickPieces">Select Pieces from Fitting Room</label>
+    <div id="builderGrid" class="grid-3" style="max-height:260px;overflow-y:auto;margin-bottom:12px;"></div>
+    <button class="btn btn-brand" onclick="saveManualOutfit()" data-i18n="saveToHome">Save to Homepage</button>
+  </div>
+</div>
+
+<!-- MODAL: INSIGHTS -->
+<div id="insightsModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="insightsTitle">Wardrobe Insights</h3>
+      <button class="icon-btn" onclick="closeModal('insightsModal')">&times;</button>
+    </div>
+    <div id="insightsContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: CAMERA -->
+<div id="cameraModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="takePhoto">Camera</h3>
+      <button class="icon-btn" onclick="stopCamera()">&times;</button>
+    </div>
+    <video id="cameraVideo" autoplay playsinline></video>
+    <div class="row-gap">
+      <button class="btn btn-sec" onclick="fallbackNativeCamera()" data-i18n="nativeCam">Phone Camera</button>
+      <button class="btn btn-brand" onclick="snapCamera()" data-i18n="capture">Capture</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CROPPER -->
+<div id="cropModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="cropPhoto">Crop Item</h3>
+      <button class="icon-btn" onclick="closeModal('cropModal')">&times;</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;" data-i18n="cropHint">Drag to center the garment & zoom in.</p>
+    <div class="crop-stage" id="cropStage">
+      <canvas id="cropCanvas" width="260" height="260"></canvas>
+      <div class="crop-grid"></div>
+    </div>
+    <label>Zoom</label>
+    <input type="range" id="cropZoom" min="1" max="3.5" step="0.05" value="1" oninput="renderCrop()">
+    <button class="btn" onclick="confirmCrop()" data-i18n="applyCrop">Apply Crop</button>
+  </div>
+</div>
+
+<!-- MODAL: WASHING MACHINE -->
+<div id="washModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="washingMachine">Washing Machine</h3>
+      <button class="icon-btn" onclick="closeModal('washModal')">&times;</button>
+    </div>
+    <p id="washItemName" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></p>
+    <label data-i18n="washDuration">Unavailable duration (hours)</label>
+    <div class="chips">
+      <button class="chip" onclick="setWashHours(2)">2h</button>
+      <button class="chip" onclick="setWashHours(12)">12h</button>
+      <button class="chip" onclick="setWashHours(24)">24h</button>
+      <button class="chip" onclick="setWashHours(48)">48h</button>
+    </div>
+    <input id="washHoursInput" type="number" value="24" min="1">
+    <div class="row-gap">
+      <button class="btn btn-sec" onclick="clearWash()" data-i18n="markClean">Mark Clean</button>
+      <button class="btn" onclick="confirmWash()" data-i18n="startWash">Put in Washer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: OUTFIT DETAIL -->
+<div id="outfitModal" class="modal-bg">
+  <div class="modal" id="outfitModalContent"></div>
+</div>
+
+<!-- MODAL: WEATHER -->
+<div id="weatherModal" class="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 data-i18n="localWeather">Local Weather</h3>
+      <button class="icon-btn" onclick="closeModal('weatherModal')">&times;</button>
+    </div>
+    <p id="weatherDetailText" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></p>
+    <label data-i18n="cityOverride">City</label>
+    <input id="cityInput" placeholder="Prague">
+    <div class="row-gap">
+      <button class="btn btn-sec" onclick="detectWeatherGPS()" data-i18n="useGps">Use GPS</button>
+      <button class="btn" onclick="fetchWeatherByCity()" data-i18n="updateCity">Update City</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= PWA SERVICE WORKER & INSTALL =================
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+async function triggerPwaInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+}
+
+// ================= SUPABASE & CLOUD AI PROXY =================
+const SUPABASE_URL = 'https://sogbzutnbhbfrpnwbtvx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_O3ZmmuILrwtwpbDgfX9VNw_2j2fwKw0';
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let currentUser = null;
+let syncTimer = null;
+
+function hasLiveAI() { return !!(sb && currentUser); }
+
+async function callGeminiAI(parts) {
+  if (!sb || !currentUser) throw new Error('Sign in to HERON Cloud to use AI.');
+  const { data, error } = await sb.functions.invoke('gemini-proxy', {
+    body: { contents: [{ parts }] }
+  });
+  if (error) throw new Error(error.message || 'Cloud AI error');
+  if (data && data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.candidates[0].content.parts[0].text;
+}
+
+// ================= CLEAN MINIMALIST SVG ICONS =================
+const SVG = {
+  heron: `<svg width="22" height="24" viewBox="0 0 40 48" fill="none"><path d="M9 7C12 5.5 16.5 5.5 19.5 7.5L36 10.2L20.5 11.4C17.5 11.8 16 14 17.2 16.8C19.2 20.8 25.5 23.5 23.5 31C21.8 37.2 14.5 41.5 9.5 45V39.5C14.5 36.5 18.8 33 19.2 28.2C19.6 24.5 16.2 22.8 13.8 20.2C10.5 16.6 10.5 11.5 13 9.2L9 7Z" fill="#FAFAFA"/><path d="M9.5 35.5C13.8 32.8 16.5 29.5 16.2 26.2C16 24.2 14.4 23 12.6 21.8C10.8 24.8 9.5 29.2 9.5 35.5Z" fill="#FAFAFA"/></svg>`,
+  home: `<svg class="ico" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>`,
+  room: `<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/><path d="M9 11v2"/><path d="M15 11v2"/></svg>`,
+  spark: `<svg class="ico" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+  user: `<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>`,
+  plus: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+  search: `<svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
+  chart: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>`,
+  layers: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>`,
+  heart: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`,
+  washer: `<svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="2" width="18" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M7 6h2"/><path d="M15 6h2"/></svg>`,
+  trash: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+  edit: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>`,
+  flip: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>`,
+  alert: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+  thumbUp: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>`,
+  thumbDown: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>`,
+  sun: `<svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+  snow: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="m2 12 20 0"/><path d="m4.93 4.93 14.14 14.14"/><path d="m19.07 4.93-14.14 14.14"/></svg>`,
+  leaf: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`,
+  sprout: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/></svg>`,
+  cloud: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
+  wind: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>`,
+  cat_outerwear: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M8 3 4 6l-1 8 3 1v6h12v-6l3-1-1-8-4-3"/><path d="M12 3v18"/><path d="M9 3c0 2 1.5 3 3 3s3-1 3-3"/></svg>`,
+  cat_hoodies: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M8 4a4 4 0 0 1 8 0l4 3-1 7-3 1v6H8v-6l-3-1-1-7 4-3Z"/><path d="M10 8v4"/><path d="M14 8v4"/></svg>`,
+  cat_tshirts: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M8.5 4 4 6.5 6 11l2-1v10h8V10l2 1 2-4.5L15.5 4a3.5 3.5 0 0 1-7 0Z"/></svg>`,
+  cat_shirts: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M8 4 4 7l2 4 2-1v10h8V10l2 1 2-4-4-3"/><path d="m8 4 4 4 4-4"/><path d="M12 8v12"/></svg>`,
+  cat_pants: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M6 3h12l1.5 18H14l-2-9-2 9H4.5L6 3Z"/><path d="M12 3v4"/></svg>`,
+  cat_shorts: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M5 5h14l1 12h-6l-2-5-2 5H4L5 5Z"/><path d="M12 5v3"/></svg>`,
+  cat_shoes: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M3 16c0-2 1-3 3-3l3-4 3 2c2 1 4 2 7 2 1.5 0 2 1 2 2.5V18H3v-2Z"/><path d="M3 18h18"/></svg>`,
+  cat_headwear: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M2 15h20"/><path d="M16 15c2 0 4 .5 6 1.5"/></svg>`,
+  cat_glasses: `<svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="6.5" cy="13" r="3.5"/><circle cx="17.5" cy="13" r="3.5"/><path d="M10 13h4"/><path d="M3 13 4 8"/><path d="M21 13l-1-5"/></svg>`,
+  cat_watches: `<svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M9.5 7 10 3h4l.5 4"/><path d="M9.5 17 10 21h4l.5-4"/><path d="M12 10v2l1.5 1"/></svg>`,
+  cat_bags: `<svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>`,
+  cat_socks: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M10 3h6v9.5a4.5 4.5 0 0 1-2.5 4l-3.5 2a3 3 0 0 1-3-5.2L10 11.5V3Z"/><path d="M10 6h6"/></svg>`,
+  cat_underwear: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M4 6h16v5c-3 0-5 2-6 7h-4c-1-5-3-7-6-7V6Z"/><path d="M4 9h16"/></svg>`,
+  cat_custom: `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1"/></svg>`
+};
+
+const DEFAULT_CATEGORIES = [
+  { id: 'outerwear', en: 'Jackets', cs: 'Bundy', washable: true, noAutoWash: true, usesThermal: true, wearDays: 0 },
+  { id: 'hoodies', en: 'Hoodies', cs: 'Mikiny', washable: true, noAutoWash: false, usesThermal: true, wearDays: 4 },
+  { id: 'tshirts', en: 'T-Shirts', cs: 'Trička', washable: true, noAutoWash: false, usesThermal: false, wearDays: 1 },
+  { id: 'shirts', en: 'Shirts', cs: 'Košile', washable: true, noAutoWash: false, usesThermal: false, wearDays: 2 },
+  { id: 'pants', en: 'Pants', cs: 'Kalhoty', washable: true, noAutoWash: false, usesThermal: true, wearDays: 8 },
+  { id: 'shorts', en: 'Shorts', cs: 'Kraťasy', washable: true, noAutoWash: false, usesThermal: true, wearDays: 3 },
+  { id: 'shoes', en: 'Shoes', cs: 'Boty', washable: false, noAutoWash: true, usesThermal: true, wearDays: 0 },
+  { id: 'headwear', en: 'Hats', cs: 'Čepice', washable: true, noAutoWash: true, usesThermal: true, wearDays: 0 },
+  { id: 'glasses', en: 'Glasses', cs: 'Brýle', washable: false, noAutoWash: true, usesThermal: false, wearDays: 0 },
+  { id: 'watches', en: 'Watches', cs: 'Hodinky', washable: false, noAutoWash: true, usesThermal: false, wearDays: 0 },
+  { id: 'bags', en: 'Bags', cs: 'Tašky', washable: false, noAutoWash: true, usesThermal: false, wearDays: 0 },
+  { id: 'socks', en: 'Socks', cs: 'Ponožky', washable: true, noAutoWash: false, usesThermal: false, wearDays: 1 },
+  { id: 'underwear', en: 'Underwear', cs: 'Spodní prádlo', washable: true, noAutoWash: false, usesThermal: false, wearDays: 1 }
+];
+
+const SEASONS = {
+  winter: { en: 'Winter', cs: 'Zima', ico: SVG.snow, min: -15, max: 6 },
+  mid: { en: 'Mid-Season', cs: 'Mezisezóna', ico: SVG.wind, min: 6, max: 16 },
+  autumn: { en: 'Autumn', cs: 'Podzim', ico: SVG.leaf, min: 7, max: 17 },
+  spring: { en: 'Spring', cs: 'Jaro', ico: SVG.sprout, min: 10, max: 20 },
+  summer: { en: 'Summer', cs: 'Léto', ico: SVG.sun, min: 19, max: 36 },
+  any: { en: 'All-Year', cs: 'Celoroční', ico: SVG.cloud, min: -20, max: 40 }
+};
+
+const I18N = {
+  en: {
+    homeTitle: 'Homepage', fittingRoom: 'Fitting Room', addItem: 'Add', buildFitBtn: 'Build Fit', insights: 'Insights',
+    quickFit: 'Quick Fit', aiChat: 'Stylist Chat', packBag: 'Pack My Bag', occasion: 'Occasion',
+    extraNote: 'Specific vibe / constraints (optional)', genTop3: 'Generate Top 3 Fits',
+    describeFit: 'Describe what you want to wear', buildOutfit: 'Build Outfit',
+    destination: 'Destination (City / Place)', tripDays: 'Duration (Days)', tripVibe: 'Trip activities & notes',
+    packNow: 'Generate Packing List', profileSettings: 'Profile & Cloud', cloudAccount: 'HERON Cloud Account',
+    authHint: 'Sign in or create your own account to sync your wardrobe and unlock built-in HERON Cloud AI.',
+    password: 'Password', signIn: 'Sign In', signUp: 'Create Account', signedInAs: 'Signed in as:',
+    syncNow: 'Sync Now', signOut: 'Sign Out', advSettings: 'Advanced Settings',
+    advSub: 'Wear cycle / No-wash, custom categories, wear tracking', openBtn: 'Open',
+    myAvatar: 'My Avatar', optional: 'Optional', avatarTip: 'Full-body photo (no crop needed, kept intact). Wear fitted sportswear for best proportion analysis.',
+    camera: 'Camera', gallery: 'Gallery', bodyPrefs: 'Body & Style Profile', gender: 'Gender', age: 'Age',
+    heightWeight: 'Height / Weight', appearance: 'Hair / Eyes / Build', styleGoals: 'Style & Fit Goals',
+    save: 'Save Profile', resetDemo: 'Reset Local Data', navHome: 'Home', navRoom: 'Fitting Room', navAi: 'Stylist', navProf: 'Profile',
+    addItemTitle: 'Add Clothing Piece', editItemTitle: 'Edit Clothing Piece', frontRequired: '1. Front (Main)',
+    backOptional: '2. Back (Optional)', skipBack: 'Skip / Clear', aiAutoFill: 'Auto-Fill Details with HERON AI',
+    itemName: 'Name', category: 'Category', newCatBtn: '+ New', size: 'Size', color: 'Color', style: 'Style',
+    notes: 'Notes (AI reads this!)', saveToWardrobe: 'Save to Fitting Room', takePhoto: 'Camera', nativeCam: 'Phone Camera',
+    capture: 'Capture', cropPhoto: 'Crop Item', cropHint: 'Drag to center the garment & zoom in.',
+    applyCrop: 'Apply Crop', washingMachine: 'Washing Machine', washDuration: 'Unavailable duration (hours)',
+    markClean: 'Mark Clean', startWash: 'Put in Washer', localWeather: 'Local Weather', cityOverride: 'City',
+    useGps: 'Use GPS', updateCity: 'Update City', all: 'All', favs: 'Favorites', inWasher: 'In Washer',
+    weatherMatch: 'Weather match', inWasherAlert: 'In washer', clean: 'Clean', flatLay: 'Flat-Lay',
+    avatarView: 'Avatar View', front: 'Front', back: 'Back', sortedByWeather: 'Sorted for current weather',
+    piecesInOutfit: 'Pieces in this outfit', deleteOutfit: 'Delete Outfit', noAvatarSet: 'No avatar uploaded yet.',
+    aiFitCheckBtn: 'Analyze Fit on My Avatar', saveToHome: 'Save to Homepage', saved: 'Saved',
+    thermalRating: 'Temperature Limit (Optional)', itemSeason: 'Season Tag', tempRange: 'From °C – To °C',
+    backupTitle: 'Local Backup (.json)', exportBtn: 'Export JSON', importBtn: 'Import JSON',
+    wearTrackTitle: 'Enable "Wear Today" Tracking', wearTrackDesc: 'Logs worn outfits so AI avoids repeats and tracks wear cycles.',
+    wearCycleTitle: 'Categories & Wear Cycle (Days)', wearCycleDesc: 'Toggle "No wash" for jackets/coats you rarely wash (manual Washer button still works).',
+    addCustomCat: 'Add Custom Category', createCat: 'Add Category', styleMemory: 'AI Style Memory',
+    manualBuilder: 'Build Outfit Manually', outfitName: 'Outfit Name', pickPieces: 'Select Pieces from Fitting Room',
+    insightsTitle: 'Wardrobe Insights', wearTodayBtn: 'Wear Today'
+  },
+  cs: {
+    homeTitle: 'Homepage', fittingRoom: 'Fitting Room', addItem: 'Přidat', buildFitBtn: 'Složit fit', insights: 'Přehled',
+    quickFit: 'Quick Fit', aiChat: 'Stylista Chat', packBag: 'Pack My Bag', occasion: 'Příležitost',
+    extraNote: 'Upřesnění / styl (nepovinné)', genTop3: 'Vygenerovat TOP 3 outfity',
+    describeFit: 'Popiš přesně, co chceš na sebe', buildOutfit: 'Poskládat outfit',
+    destination: 'Destinace (Město / Místo)', tripDays: 'Počet dní', tripVibe: 'Aktivity & poznámky k cestě',
+    packNow: 'Sbalit kufr přes AI', profileSettings: 'Profil & Cloud', cloudAccount: 'HERON Cloud Účet',
+    authHint: 'Přihlas se nebo si vytvoř vlastní účet pro synchronizaci šatníku a odemknutí HERON Cloud AI.',
+    password: 'Heslo', signIn: 'Přihlásit se', signUp: 'Vytvořit účet', signedInAs: 'Přihlášen jako:',
+    syncNow: 'Synchronizovat', signOut: 'Odhlásit se', advSettings: 'Pokročilé nastavení',
+    advSub: 'Cyklus praní / No-wash, vlastní kategorie, sledování nošení', openBtn: 'Otevřít',
+    myAvatar: 'Můj Avatar', optional: 'Volitelné', avatarTip: 'Fotka celé postavy (bez ořezu, zůstane celá). Upnuté sportovní oblečení funguje nejlíp.',
+    camera: 'Foťák', gallery: 'Galerie', bodyPrefs: 'Postava & Styl', gender: 'Pohlaví', age: 'Věk',
+    heightWeight: 'Výška / Váha', appearance: 'Vlasy / Oči / Postava', styleGoals: 'Cíle & Preferovaný styl',
+    save: 'Uložit profil', resetDemo: 'Resetovat lokální data', navHome: 'Domů', navRoom: 'Fitting Room', navAi: 'Stylista', navProf: 'Profil',
+    addItemTitle: 'Přidat kus oblečení', editItemTitle: 'Upravit kus oblečení', frontRequired: '1. Předek (Hlavní)',
+    backOptional: '2. Záda (Volitelné)', skipBack: 'Přeskočit / Smazat', aiAutoFill: 'Rozpoznat kus přes HERON AI',
+    itemName: 'Název', category: 'Kategorie', newCatBtn: '+ Nová', size: 'Velikost', color: 'Barva', style: 'Styl',
+    notes: 'Poznámky (AI je čte!)', saveToWardrobe: 'Uložit do Fitting Room', takePhoto: 'Foťák', nativeCam: 'Mobilní foťák',
+    capture: 'Vyfotit', cropPhoto: 'Oříznout kus', cropHint: 'Posuň a přibliž oblečení do čtverce.',
+    applyCrop: 'Použít ořez', washingMachine: 'Washing Machine', washDuration: 'Jak dlouho bude nedostupné (hodiny)',
+    markClean: 'Už je čisté', startWash: 'Hodit do pračky', localWeather: 'Aktuální počasí', cityOverride: 'Město',
+    useGps: 'Použít GPS', updateCity: 'Nastavit město', all: 'Vše', favs: 'Oblíbené', inWasher: 'V pračce',
+    weatherMatch: 'Sedí k počasí', inWasherAlert: 'V pračce', clean: 'Čisté', flatLay: 'Koláž',
+    avatarView: 'Avatar', front: 'Předek', back: 'Záda', sortedByWeather: 'Seřazeno podle aktuálního počasí',
+    piecesInOutfit: 'Kusy v outfitu', deleteOutfit: 'Smazat outfit', noAvatarSet: 'Zatím nemáš nahraného avatara.',
+    aiFitCheckBtn: 'Vyhodnotit proporce na avatarovi', saveToHome: 'Uložit na Homepage', saved: 'Uloženo',
+    thermalRating: 'Teplotní rozsah (Volitelné)', itemSeason: 'Sezónní štítek', tempRange: 'Od °C – Do °C',
+    backupTitle: 'Lokální záloha (.json)', exportBtn: 'Stáhnout JSON', importBtn: 'Nahrát JSON',
+    wearTrackTitle: 'Zapnout sledování "Dneska nosím"', wearTrackDesc: 'Zapisuje nošené outfity, hlídá opakování a navrhuje praní.',
+    wearCycleTitle: 'Kategorie & Cyklus nošení (Dny)', wearCycleDesc: 'Zaškrtni "No wash" u bund, které běžně nepereš (ruční pračka ve Fitting Room pořád funguje).',
+    addCustomCat: 'Přidat vlastní kategorii', createCat: 'Přidat kategorii', styleMemory: 'Paměť stylu AI',
+    manualBuilder: 'Poskládat outfit ručně', outfitName: 'Název outfitu', pickPieces: 'Vyber kusy ze skříně',
+    insightsTitle: 'Přehled šatníku', wearTodayBtn: 'Dneska si tohle beru'
+  }
+};
+
+function t(k) { return (I18N[state.lang] && I18N[state.lang][k]) || I18N.en[k] || k; }
+
+function makeGraphicCard(title, sub, bg, accent) {
+  const c = document.createElement('canvas'); c.width = 360; c.height = 360;
+  const ctx = c.getContext('2d'); ctx.fillStyle = bg; ctx.fillRect(0, 0, 360, 360);
+  ctx.strokeStyle = accent; ctx.lineWidth = 3; ctx.strokeRect(24, 24, 312, 312);
+  ctx.fillStyle = '#fafafa'; ctx.font = '600 22px -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(title, 180, 175);
+  ctx.fillStyle = '#a1a1aa'; ctx.font = '500 14px -apple-system, sans-serif'; ctx.fillText(sub, 180, 205);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+
+async function buildCollage(itemIds, side = 'front') {
+  const items = itemIds.map(id => state.wardrobe.find(w => w.id === id)).filter(Boolean);
+  const c = document.createElement('canvas'); c.width = 400; c.height = 400;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#0d0d11'; ctx.fillRect(0, 0, 400, 400);
+  const count = Math.min(items.length, 4);
+  if (!count) return c.toDataURL();
+  const coords = count === 1 ? [[0,0,400,400]]
+    : count === 2 ? [[0,0,200,400],[200,0,200,400]]
+    : count === 3 ? [[0,0,200,200],[200,0,200,200],[0,200,400,200]]
+    : [[0,0,200,200],[200,0,200,200],[0,200,200,200],[200,200,200,200]];
+  for (let i = 0; i < count; i++) {
+    const src = (side === 'back' && items[i].backImg) ? items[i].backImg : items[i].frontImg;
+    await new Promise(res => {
+      const img = new Image();
+      img.onload = () => { const [x,y,w,h] = coords[i]; ctx.drawImage(img, x+2, y+2, w-4, h-4); res(); };
+      img.onerror = res; img.src = src;
+    });
+  }
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+const DEFAULT_WARDROBE = [
+  { id: 'w1', name: 'Heavy Boxy Hoodie', cat: 'hoodies', size: 'M', color: 'Black', style: 'Streetwear', useThermal: true, season: 'autumn', tempMin: 2, tempMax: 17, notes: '460gsm cotton, white graphic on back', fav: true, washUntil: 0, wearCount: 0, wearsSinceWash: 0,
+    frontImg: makeGraphicCard('BOX HOODIE', 'FRONT • BLACK', '#141418', '#3f3f46'),
+    backImg: makeGraphicCard('BACK GRAPHIC', 'BACK • PRINT', '#181820', '#6366f1') },
+  { id: 'w2', name: 'Plaid Flannel Bomber', cat: 'outerwear', size: 'M', color: 'Green/Black', style: 'Streetwear', useThermal: true, season: 'winter', tempMin: -8, tempMax: 8, notes: 'Insulated warm winter jacket', fav: true, washUntil: 0, wearCount: 0, wearsSinceWash: 0,
+    frontImg: makeGraphicCard('PLAID BOMBER', 'WINTER • -8°/8°C', '#12211a', '#22c55e'), backImg: '' },
+  { id: 'w3', name: 'Balloon Rigid Jeans', cat: 'pants', size: 'W30', color: 'Washed Blue', style: 'Streetwear', useThermal: false, season: 'any', tempMin: -10, tempMax: 24, notes: '100% cotton heavy denim', fav: true, washUntil: 0, wearCount: 0, wearsSinceWash: 0,
+    frontImg: makeGraphicCard('BALLOON JEANS', '100% COTTON', '#131d2e', '#3b82f6'), backImg: '' },
+  { id: 'w4', name: 'Low-Top Jordans', cat: 'shoes', size: 'EU 44', color: 'Black', style: 'Streetwear', useThermal: false, season: 'any', tempMin: -8, tempMax: 28, notes: 'Daily leather sneakers', fav: true, washUntil: 0, wearCount: 0, wearsSinceWash: 0,
+    frontImg: makeGraphicCard('JORDAN LOW', 'EU 44 • BLACK', '#18181b', '#52525b'), backImg: '' }
+];
+
+let state = JSON.parse(localStorage.getItem('wardrobe_v2') || 'null') || {
+  lang: 'en',
+  weather: { city: 'Prague', temp: 4, code: 3, updated: 0 },
+  profile: { gender: 'Male', age: 17, body: '171 cm, 52 kg', look: 'Blond hair, lean build', style: 'Baggy / Streetwear', avatarImg: '' },
+  settings: { wearTracking: false },
+  categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
+  styleMemory: { likes: [], dislikes: [] },
+  wearHistory: [],
+  wardrobe: DEFAULT_WARDROBE,
+  outfits: [
+    { id: 'o1', name: 'Cold Layer Streetwear', style: 'Streetwear', rating: '9.4/10', occasion: 'Daily', season: 'winter', tempMin: -8, tempMax: 8, items: ['w2','w1','w3','w4'], note: 'Warm bomber over boxy hoodie.', collage: '' }
+  ]
+};
+
+function getCat(id) {
+  return (state.categories || DEFAULT_CATEGORIES).find(c => c.id === id) || { id, en: id, cs: id, washable: true, noAutoWash: false, usesThermal: false, wearDays: 2 };
+}
+function catLabel(id) { const c = getCat(id); return c[state.lang] || c.en || id; }
+function catIcon(id) { return SVG['cat_' + id] || SVG.cat_custom; }
+
+function normalizeState() {
+  if (!state.profile.gender) state.profile.gender = 'Male';
+  if (!state.settings) state.settings = { wearTracking: false };
+  if (!state.categories || !state.categories.length) state.categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  state.categories.forEach(c => {
+    if (c.noAutoWash === undefined) c.noAutoWash = !c.washable || c.id === 'outerwear' || c.id === 'headwear';
+  });
+  if (!state.styleMemory) state.styleMemory = { likes: [], dislikes: [] };
+  if (!state.wearHistory) state.wearHistory = [];
+  state.wardrobe.forEach(w => {
+    const cObj = getCat(w.cat);
+    if (w.useThermal === undefined) w.useThermal = cObj.usesThermal && w.season && w.season !== 'any';
+    if (!w.season) w.season = w.useThermal ? 'autumn' : 'any';
+    if (w.wearCount === undefined) w.wearCount = 0;
+    if (w.wearsSinceWash === undefined) w.wearsSinceWash = 0;
+  });
+}
+normalizeState();
+
+let activeCat = 'all', activeSeason = 'all', selectedOccasion = 'School', currentWashId = null, editingItemId = null;
+let wardrobeFlipped = {}, builderSelected = new Set();
+let draftFront = '', draftBack = '', captureTarget = 'front', camStream = null, cropImgObj = null;
+let cropState = { x: 0, y: 0, zoom: 1, dragging: false, lx: 0, ly: 0 };
+
+function saveState(skipCloud = false) {
+  try { localStorage.setItem('wardrobe_v2', JSON.stringify(state)); }
+  catch (e) {}
+  updateModeBadge();
+  updateStorageStats();
+  if (!skipCloud && currentUser) {
+    setSyncVisual('busy', 'Syncing...');
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => cloudPush(false), 1200);
+  }
+}
+
+function updateStorageStats() {
+  const el = document.getElementById('storageStats');
+  if (el) el.textContent = `${state.wardrobe.length} items · ${state.outfits.length} fits`;
+}
+function isWashing(item) { return item && getCat(item.cat).washable && item.washUntil > Date.now(); }
+function formatRem(ms) { const h = Math.ceil(ms / 3600000); return h >= 24 ? `${Math.ceil(h/24)}d` : `${h}h`; }
+function isItemSuitableForTemp(item, temp) {
+  if (!item || !item.useThermal || item.season === 'any') return true;
+  const min = item.tempMin ?? -20, max = item.tempMax ?? 40;
+  return temp >= (min - 2) && temp <= (max + 2);
+}
+
+// ================= SUPABASE AUTH & SYNC =================
+function setSyncVisual(status, msg = '') {
+  const dot = document.getElementById('headerSyncDot');
+  const badge = document.getElementById('cloudStatusBadge');
+  const syncMsg = document.getElementById('syncMsg');
+  dot.className = 'sync-dot' + (status === 'ok' ? ' ok' : status === 'busy' ? ' busy' : '');
+  if (badge) {
+    badge.textContent = status === 'ok' ? 'Synced' : status === 'busy' ? 'Syncing...' : 'Offline';
+    badge.className = status === 'ok' ? 'pill match' : 'pill';
+  }
+  if (syncMsg && msg) syncMsg.textContent = msg;
+}
+
+function updateAuthUI() {
+  const loggedIn = !!currentUser;
+  document.getElementById('authLoggedOut').style.display = loggedIn ? 'none' : 'block';
+  document.getElementById('authLoggedIn').style.display = loggedIn ? 'block' : 'none';
+  if (loggedIn) document.getElementById('authUserEmail').textContent = currentUser.email;
+  else setSyncVisual('off');
+  updateModeBadge();
+}
+
+async function initSupabase() {
+  if (!sb) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (session && session.user) { currentUser = session.user; updateAuthUI(); await cloudPull(); }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    currentUser = session ? session.user : null;
+    updateAuthUI();
+    if (event === 'SIGNED_IN') await cloudPull();
+  });
+}
+
+async function cloudSignUp() {
+  if (!sb) return alert('Supabase offline.');
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  if (!email || password.length < 6) { msg.textContent = 'Valid email & 6+ char password required.'; return; }
+  msg.textContent = 'Creating account...';
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) { msg.textContent = error.message; return; }
+  msg.textContent = 'Account created!';
+  if (data.user) { currentUser = data.user; updateAuthUI(); await cloudPush(true); }
+}
+
+async function cloudSignIn() {
+  if (!sb) return alert('Supabase offline.');
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg = document.getElementById('authMsg');
+  msg.textContent = 'Signing in...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) { msg.textContent = error.message; return; }
+  msg.textContent = ''; currentUser = data.user; updateAuthUI(); await cloudPull();
+}
+
+async function cloudSignOut() {
+  if (!sb) return;
+  await sb.auth.signOut(); currentUser = null; updateAuthUI();
+}
+
+async function cloudPull() {
+  if (!sb || !currentUser) return;
+  setSyncVisual('busy', 'Loading cloud wardrobe...');
+  const { data, error } = await sb.from('user_wardrobes').select('data').eq('user_id', currentUser.id).maybeSingle();
+  if (error) { setSyncVisual('off', 'Cloud error: ' + error.message); return; }
+  if (data && data.data && data.data.wardrobe) {
+    state = data.data; normalizeState(); saveState(true); hydrateProfileInputs(); applyLang(); renderSettingsAvatar();
+    setSyncVisual('ok', 'Loaded from cloud · ' + new Date().toLocaleTimeString());
+  } else { await cloudPush(true); }
+}
+
+async function cloudPush(manual = false) {
+  if (!sb || !currentUser) return;
+  setSyncVisual('busy', 'Saving to cloud...');
+  const { error } = await sb.from('user_wardrobes').upsert({ user_id: currentUser.id, data: state, updated_at: new Date().toISOString() });
+  if (error) { setSyncVisual('off', 'Sync failed: ' + error.message); return; }
+  setSyncVisual('ok', (manual ? 'Synced · ' : 'Auto-synced · ') + new Date().toLocaleTimeString());
+}
+
+// ================= BACKUP =================
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `heron_weargo_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+}
+function triggerImportBackup() { const i = document.getElementById('importJsonInput'); i.value = ''; i.click(); }
+function importBackup(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const p = JSON.parse(ev.target.result);
+      if (!p.wardrobe || !p.outfits) return alert('Invalid backup file.');
+      state = p; normalizeState(); saveState(); hydrateProfileInputs(); applyLang(); renderSettingsAvatar();
+      alert('Backup restored!');
+    } catch (err) { alert('JSON Error: ' + err.message); }
+  };
+  r.readAsText(f);
+}
+
+// ================= WEATHER =================
+function getWeatherIcon(temp) { return temp <= 4 ? SVG.snow : temp <= 15 ? SVG.leaf : temp <= 21 ? SVG.cloud : SVG.sun; }
+function renderWeatherHeader() {
+  const w = state.weather;
+  document.getElementById('weatherIco').innerHTML = getWeatherIcon(w.temp);
+  document.getElementById('weatherTemp').textContent = `${Math.round(w.temp)}°C`;
+  document.getElementById('homeWeatherHint').textContent = `${t('sortedByWeather')} (${Math.round(w.temp)}°C, ${w.city})`;
+}
+async function fetchWeatherCoords(lat, lon, cityName) {
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+    const d = await r.json();
+    state.weather = { city: cityName, temp: d.current.temperature_2m, code: d.current.weather_code, updated: Date.now() };
+    saveState(true); renderWeatherHeader(); renderOutfits();
+  } catch (e) {}
+}
+function detectWeatherGPS() {
+  if (!navigator.geolocation) return fetchWeatherCoords(50.0755, 14.4378, 'Prague');
+  navigator.geolocation.getCurrentPosition(
+    pos => { fetchWeatherCoords(pos.coords.latitude, pos.coords.longitude, 'Local'); closeModal('weatherModal'); },
+    () => { fetchWeatherCoords(50.0755, 14.4378, 'Prague'); closeModal('weatherModal'); }
+  );
+}
+async function fetchWeatherByCity() {
+  const q = document.getElementById('cityInput').value.trim(); if (!q) return;
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`);
+    const d = await r.json();
+    if (!d.results || !d.results.length) return alert('City not found');
+    const c = d.results[0]; await fetchWeatherCoords(c.latitude, c.longitude, c.name); closeModal('weatherModal');
+  } catch (e) { alert('Weather error: ' + e.message); }
+}
+function openWeatherModal() {
+  document.getElementById('cityInput').value = state.weather.city;
+  document.getElementById('weatherDetailText').textContent = `${state.weather.city}: ${Math.round(state.weather.temp)}°C`;
+  document.getElementById('weatherModal').classList.add('open');
+}
+function tempDistance(outfit) {
+  const cur = state.weather.temp, min = outfit.tempMin ?? 10, max = outfit.tempMax ?? 22;
+  if (cur >= min && cur <= max) return 0;
+  return cur < min ? (min - cur) : (cur - max);
+}
+
+// ================= LANGUAGE & NAV =================
+function populateCategorySelect() {
+  document.getElementById('itemCat').innerHTML = state.categories.map(c => `<option value="${c.id}">${c[state.lang] || c.en}</option>`).join('');
+}
+function applyLang() {
+  document.getElementById('langToggle').textContent = state.lang.toUpperCase();
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (I18N[state.lang][k]) el.textContent = I18N[state.lang][k];
+  });
+  populateCategorySelect(); renderOccasionChips(); renderWeatherHeader(); renderOutfits(); renderWardrobe(); updateStorageStats();
+}
+function toggleLang() { state.lang = state.lang === 'en' ? 'cs' : 'en'; saveState(); applyLang(); }
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (id === 'home') renderOutfits();
+  if (id === 'wardrobe') renderWardrobe();
+  if (id === 'settings') { renderSettingsAvatar(); updateStorageStats(); }
+}
+
+// ================= HOMEPAGE =================
+async function renderOutfits() {
+  const sKeys = ['all', 'winter', 'mid', 'autumn', 'spring', 'summer'];
+  document.getElementById('seasonFilters').innerHTML = sKeys.map(k => {
+    const label = k === 'all' ? t('all') : `${SEASONS[k].ico} ${SEASONS[k][state.lang]}`;
+    return `<button class="chip ${activeSeason===k?'active':''}" onclick="activeSeason='${k}';renderOutfits()">${label}</button>`;
+  }).join('');
+
+  let list = [...state.outfits].filter(o => activeSeason === 'all' || o.season === activeSeason);
+  list.sort((a, b) => tempDistance(a) - tempDistance(b));
+
+  document.getElementById('outfitCount').textContent = `${list.length}`;
+  const grid = document.getElementById('outfitsGrid');
+  if (!list.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">No outfits yet. Build one manually or use AI Stylist.</div>`; return; }
+
+  let html = '';
+  for (const o of list) {
+    if (!o.collage) { o.collage = await buildCollage(o.items, 'front'); saveState(true); }
+    const washed = o.items.map(id => state.wardrobe.find(w => w.id === id)).filter(isWashing);
+    const hasWash = washed.length > 0;
+    const maxWash = hasWash ? Math.max(...washed.map(w => w.washUntil - Date.now())) : 0;
+    const dist = tempDistance(o);
+    const sObj = SEASONS[o.season] || SEASONS.autumn;
+
+    html += `
+      <div class="card ${hasWash ? 'washing' : ''}" onclick="openOutfitDetail('${o.id}')" style="cursor:pointer;">
+        <div class="card-media">
+          <img src="${o.collage}">
+          <div class="overlay-top-left">
+            ${hasWash ? `<span class="badge-float badge-alert">${SVG.alert} ${t('inWasherAlert')} (${formatRem(maxWash)})</span>` : ''}
+            <span class="badge-float badge-season">${sObj.ico} ${o.tempMin}°–${o.tempMax}°C</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${o.name}</div>
+          <div class="card-sub">${o.occasion} · ${o.rating || 'Custom'}</div>
+          <div class="row-gap" style="margin-top:6px;flex-wrap:wrap;">
+            <span class="pill">${o.style}</span>
+            ${dist === 0 ? `<span class="pill match">${t('weatherMatch')}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ================= MANUAL BUILDER =================
+function openManualBuilder() {
+  builderSelected.clear(); document.getElementById('buildName').value = '';
+  document.getElementById('builderGrid').innerHTML = state.wardrobe.map(w => `
+    <div class="pick-card" id="pick_${w.id}" onclick="toggleBuilderPick('${w.id}')">
+      <img src="${w.frontImg}"><div>${w.name}</div>
+    </div>`).join('');
+  document.getElementById('builderModal').classList.add('open');
+}
+function toggleBuilderPick(id) {
+  if (builderSelected.has(id)) builderSelected.delete(id); else builderSelected.add(id);
+  document.getElementById('pick_' + id).classList.toggle('picked', builderSelected.has(id));
+}
+async function saveManualOutfit() {
+  const items = [...builderSelected];
+  if (items.length < 2) return alert('Pick at least 2 pieces.');
+  const name = document.getElementById('buildName').value.trim() || 'Custom Fit';
+  const season = document.getElementById('buildSeason').value;
+  const sObj = SEASONS[season] || SEASONS.autumn;
+  const collage = await buildCollage(items, 'front');
+  state.outfits.unshift({
+    id: 'o' + Date.now(), name, style: 'Custom', rating: 'My Fit',
+    occasion: document.getElementById('buildOcc').value || 'Daily',
+    season, tempMin: sObj.min, tempMax: sObj.max, items, note: 'Built manually.', collage
+  });
+  saveState(); closeModal('builderModal'); renderOutfits();
+}
+
+// ================= OUTFIT DETAIL =================
+async function openOutfitDetail(id, view = 'flat', side = 'front') {
+  const o = state.outfits.find(x => x.id === id); if (!o) return;
+  const items = o.items.map(wid => state.wardrobe.find(w => w.id === wid)).filter(Boolean);
+  const hasAnyBack = items.some(i => i.backImg);
+  const previewSrc = side === 'back' ? await buildCollage(o.items, 'back') : o.collage;
+  const sObj = SEASONS[o.season] || SEASONS.autumn;
+
+  document.getElementById('outfitModalContent').innerHTML = `
+    <div class="modal-head">
+      <h3>${o.name}</h3>
+      <button class="icon-btn" onclick="closeModal('outfitModal')">&times;</button>
+    </div>
+
+    <div class="seg">
+      <button class="${view==='flat'?'active':''}" onclick="openOutfitDetail('${id}','flat','${side}')">${t('flatLay')}</button>
+      <button class="${view==='avatar'?'active':''}" onclick="openOutfitDetail('${id}','avatar','${side}')">${t('avatarView')}</button>
+    </div>
+
+    ${view === 'flat' ? `
+      <div style="position:relative;margin-bottom:10px;">
+        <img src="${previewSrc}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;border:1px solid var(--border);">
+        ${hasAnyBack ? `<button class="btn btn-sec btn-sm" style="position:absolute;bottom:10px;right:10px;" onclick="openOutfitDetail('${id}','flat','${side==='front'?'back':'front'}')">${SVG.flip} ${side==='front'?t('back'):t('front')}</button>` : ''}
+      </div>
+    ` : `
+      <div class="avatar-stage">
+        <div class="avatar-frame">${state.profile.avatarImg ? `<img src="${state.profile.avatarImg}">` : `<span>${t('noAvatarSet')}</span>`}</div>
+        <div style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;font-weight:700;margin-bottom:4px;">${state.profile.gender} · ${state.profile.body}</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.4;">${state.profile.look}<br>${state.profile.style}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
+            ${items.slice(0,4).map(w => `<img src="${w.frontImg}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:6px;border:1px solid var(--border);">`).join('')}
+          </div>
+        </div>
+      </div>
+      <div id="avatarAiFeedback" style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.45;"></div>
+      <button class="btn btn-brand btn-sm" style="width:100%;margin-bottom:10px;" onclick="runAvatarFitCheck('${id}')">${SVG.spark} ${t('aiFitCheckBtn')}</button>
+    `}
+
+    ${state.settings.wearTracking ? `<button class="btn btn-brand" style="margin-bottom:10px;" onclick="logWearToday('${id}')">${t('wearTodayBtn')}</button>` : ''}
+
+    <div class="row-gap" style="margin-bottom:8px;flex-wrap:wrap;">
+      <span class="pill">${sObj.ico} ${o.tempMin}°–${o.tempMax}°C</span>
+      <span class="pill">${o.style}</span>
+      <span class="pill">${o.rating || 'Custom'}</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">${o.note || ''}</p>
+
+    <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">${t('piecesInOutfit')}</h4>
+    ${items.map(w => {
+      const cObj = getCat(w.cat);
+      return `
+      <div class="row-between" style="background:var(--bg);padding:8px;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;">
+        <div class="row-gap">
+          <img src="${(side==='back' && w.backImg) ? w.backImg : w.frontImg}" style="width:38px;height:38px;border-radius:6px;object-fit:cover;">
+          <div>
+            <div style="font-size:12px;font-weight:600;">${w.name} ${w.size ? `<span style="color:var(--muted);font-weight:400;">(${w.size})</span>` : ''}</div>
+            <div style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:4px;">${catIcon(w.cat)} ${catLabel(w.cat)}</div>
+          </div>
+        </div>
+        ${!cObj.washable ? '' : isWashing(w)
+          ? `<span style="font-size:11px;color:var(--warn);font-weight:600;">${formatRem(w.washUntil - Date.now())}</span>`
+          : `<span style="font-size:11px;color:var(--ok);">${t('clean')}</span>`}
+      </div>`;
+    }).join('')}
+
+    <button class="btn btn-danger" style="margin-top:10px;" onclick="deleteOutfit('${o.id}')">${SVG.trash} ${t('deleteOutfit')}</button>
+  `;
+  document.getElementById('outfitModal').classList.add('open');
+}
+
+function logWearToday(outfitId) {
+  const o = state.outfits.find(x => x.id === outfitId); if (!o) return;
+  const dueForWash = [];
+  o.items.forEach(wid => {
+    const w = state.wardrobe.find(x => x.id === wid); if (!w) return;
+    w.wearCount = (w.wearCount || 0) + 1; w.lastWorn = Date.now();
+    const cObj = getCat(w.cat);
+    if (cObj.washable && !cObj.noAutoWash && cObj.wearDays > 0) {
+      w.wearsSinceWash = (w.wearsSinceWash || 0) + 1;
+      if (w.wearsSinceWash >= cObj.wearDays) dueForWash.push(w);
+    }
+  });
+  state.wearHistory.unshift({ date: new Date().toISOString().slice(0,10), outfitName: o.name, items: o.items });
+  state.wearHistory = state.wearHistory.slice(0, 30);
+
+  if (dueForWash.length && confirm(`Logged! Put these items (reached wear cycle) in Washing Machine for 24h?\n- ${dueForWash.map(x=>x.name).join('\n- ')}`)) {
+    dueForWash.forEach(w => { w.washUntil = Date.now() + 24 * 3600000; w.wearsSinceWash = 0; });
+  } else { alert('Outfit logged for today!'); }
+  saveState(); closeModal('outfitModal'); renderOutfits();
+}
+
+async function runAvatarFitCheck(outfitId) {
+  const box = document.getElementById('avatarAiFeedback');
+  const o = state.outfits.find(x => x.id === outfitId);
+  const items = o.items.map(wid => state.wardrobe.find(w => w.id === wid)).filter(Boolean);
+  if (!hasLiveAI()) {
+    box.innerHTML = `<strong>Demo Fit Advice:</strong> Sign in to HERON Cloud in Profile to unlock live AI proportion analysis on your avatar.`;
+    return;
+  }
+  box.textContent = 'Analyzing proportions with HERON Cloud AI...';
+  try {
+    const parts = [{ text: `Evaluate how this outfit fits this person (${state.profile.gender}, age ${state.profile.age}, ${state.profile.body}, ${state.profile.look}, goal: ${state.profile.style}). Outfit: ${items.map(i=>`${i.name} (${i.size}, ${i.color}, ${i.notes})`).join(', ')}. Reply concisely in ${state.lang==='cs'?'Czech':'English'} (max 3 sentences).` }];
+    if (state.profile.avatarImg) parts.push({ inline_data: { mime_type: 'image/jpeg', data: state.profile.avatarImg.split(',')[1] } });
+    box.textContent = await callGeminiAI(parts);
+  } catch (e) { box.textContent = 'AI Error: ' + e.message; }
+}
+
+function deleteOutfit(id) { state.outfits = state.outfits.filter(o => o.id !== id); saveState(); closeModal('outfitModal'); renderOutfits(); }
+
+// ================= FITTING ROOM =================
+function renderWardrobe() {
+  const filterBtns = [
+    { id: 'all', label: t('all') },
+    { id: 'fav', label: `${SVG.heart} ${t('favs')}` },
+    { id: 'wash', label: `${SVG.washer} ${t('inWasher')}` },
+    ...state.categories.map(c => ({ id: c.id, label: `${catIcon(c.id)} ${c[state.lang] || c.en}` }))
+  ];
+  document.getElementById('catFilters').innerHTML = filterBtns.map(f =>
+    `<button class="chip ${activeCat===f.id?'active':''}" onclick="activeCat='${f.id}';renderWardrobe()">${f.label}</button>`
+  ).join('');
+
+  const q = (document.getElementById('wardrobeSearch')?.value || '').trim().toLowerCase();
+  const filtered = state.wardrobe.filter(w => {
+    if (activeCat === 'fav' && !w.fav) return false;
+    if (activeCat === 'wash' && !isWashing(w)) return false;
+    if (!['all','fav','wash'].includes(activeCat) && w.cat !== activeCat) return false;
+    if (q) {
+      const hay = `${w.name} ${w.color} ${w.style} ${w.notes} ${w.size} ${catLabel(w.cat)}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const grid = document.getElementById('wardrobeGrid');
+  if (!filtered.length) { grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">No matching items.</div>`; return; }
+
+  grid.innerHTML = filtered.map(w => {
+    const cObj = getCat(w.cat);
+    const wash = isWashing(w);
+    const showBack = wardrobeFlipped[w.id] && w.backImg;
+    const sObj = SEASONS[w.season] || SEASONS.any;
+    return `
+      <div class="card ${wash ? 'washing' : ''}">
+        <div class="card-media">
+          <img src="${showBack ? w.backImg : w.frontImg}">
+          <div class="overlay-top-left">
+            ${wash ? `<span class="badge-float badge-wash">${SVG.washer} ${formatRem(w.washUntil - Date.now())}</span>` : ''}
+            ${w.useThermal && w.season !== 'any' ? `<span class="badge-float badge-season">${sObj.ico} ${w.tempMin}°–${w.tempMax}°C</span>` : ''}
+          </div>
+          <div class="overlay-top-right">
+            ${w.backImg ? `<button class="icon-btn" onclick="flipItem('${w.id}')">${SVG.flip}</button>` : ''}
+            <button class="icon-btn ${w.fav?'fav-on':''}" onclick="toggleFav('${w.id}')">${SVG.heart}</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${w.name}</div>
+          <div class="card-sub">${catIcon(w.cat)} ${catLabel(w.cat)}${w.size ? ` · ${w.size}` : ''}</div>
+          ${w.notes ? `<div class="card-sub" style="font-size:10px;opacity:0.8;">${w.notes}</div>` : ''}
+          <div class="row-between" style="margin-top:8px;">
+            ${cObj.washable ? `<button class="btn btn-sec btn-sm" onclick="openWashModal('${w.id}')">${SVG.washer}</button>` : '<span></span>'}
+            <div class="row-gap">
+              <button class="btn btn-sec btn-sm" onclick="openEditModal('${w.id}')">${SVG.edit}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${w.id}')">${SVG.trash}</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function flipItem(id) { wardrobeFlipped[id] = !wardrobeFlipped[id]; renderWardrobe(); }
+function toggleFav(id) { const w = state.wardrobe.find(x => x.id === id); if (w) { w.fav = !w.fav; saveState(); renderWardrobe(); } }
+function deleteItem(id) { state.wardrobe = state.wardrobe.filter(x => x.id !== id); saveState(); renderWardrobe(); }
+
+// ================= INSIGHTS =================
+function openInsightsModal() {
+  const sorted = [...state.wardrobe].sort((a,b) => (b.wearCount||0) - (a.wearCount||0));
+  const mostWorn = sorted.slice(0, 3), unused = sorted.filter(w => !(w.wearCount > 0)).slice(0, 5);
+  document.getElementById('insightsContent').innerHTML = `
+    <div class="box">
+      <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Most Worn Pieces</h4>
+      ${mostWorn.map(w => `<div class="row-between" style="margin-bottom:6px;font-size:12px;"><span>${w.name}</span><span class="pill match">${w.wearCount||0}×</span></div>`).join('')}
+    </div>
+    <div class="box">
+      <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Collecting Dust (0 wears)</h4>
+      ${unused.length ? unused.map(w => `<div class="row-between" style="margin-bottom:5px;font-size:12px;"><span>${w.name}</span><span class="pill">${catLabel(w.cat)}</span></div>`).join('') : '<span style="font-size:11px;color:var(--ok);">Great! You wear your whole wardrobe.</span>'}
+    </div>
+    <div class="box">
+      <h4 style="font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">AI Missing Pieces</h4>
+      <div id="missingPiecesOut" style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px;">Find which 2–3 versatile pieces would unlock the most new outfits.</div>
+      <button class="btn btn-brand btn-sm" style="width:100%;" onclick="runMissingPiecesAI()">${SVG.spark} Analyze Missing Pieces</button>
+    </div>`;
+  document.getElementById('insightsModal').classList.add('open');
+}
+
+async function runMissingPiecesAI() {
+  const out = document.getElementById('missingPiecesOut');
+  if (!hasLiveAI()) { out.textContent = 'Sign in to HERON Cloud in Profile to use live AI Missing Pieces.'; return; }
+  out.textContent = 'Scanning wardrobe gaps with HERON AI...';
+  try {
+    const listStr = state.wardrobe.map(w => `${w.name} (${catLabel(w.cat)}, ${w.color}, ${w.style})`).join('\n');
+    const txt = await callGeminiAI([{ text: `User (${state.profile.gender}, age ${state.profile.age}, style: ${state.profile.style}) owns:\n${listStr}\nSuggest 3 specific "Missing Pieces" that would unlock the highest number of new outfits. Reply concisely as 3 bullet points in ${state.lang==='cs'?'Czech':'English'}.` }]);
+    out.innerHTML = txt.replace(/\n/g, '<br>');
+  } catch (e) { out.textContent = 'AI Error: ' + e.message; }
+}
+
+// ================= ADVANCED SETTINGS (WITH NO-WASH TOGGLE) =================
+function openAdvancedModal() {
+  document.getElementById('advWearTrack').checked = !!state.settings.wearTracking;
+  renderAdvCategories(); renderStyleMemory();
+  document.getElementById('advancedModal').classList.add('open');
+}
+function toggleAdvWearTrack() { state.settings.wearTracking = document.getElementById('advWearTrack').checked; saveState(); }
+function renderAdvCategories() {
+  document.getElementById('advCatList').innerHTML = state.categories.map((c, idx) => `
+    <div class="cat-setting-row">
+      <div class="row-gap">${catIcon(c.id)} <span>${c[state.lang] || c.en}</span></div>
+      <div class="row-gap">
+        ${!c.washable
+          ? `<span class="pill" style="font-size:9px;">Accessory</span>`
+          : `
+            <label style="display:flex;align-items:center;gap:4px;margin:0;text-transform:none;font-size:10px;color:var(--muted);cursor:pointer;">
+              <input type="checkbox" ${c.noAutoWash?'checked':''} onchange="toggleCatNoWash(${idx}, this.checked)" style="width:auto;margin:0;"> No wash
+            </label>
+            ${c.noAutoWash ? '' : `<input type="number" min="1" max="99" value="${c.wearDays || 1}" style="width:48px;margin:0;padding:4px 6px;font-size:11px;text-align:center;" onchange="updateCatWearDays(${idx}, this.value)">`}
+          `}
+      </div>
+    </div>
+  `).join('');
+}
+function toggleCatNoWash(idx, checked) {
+  state.categories[idx].noAutoWash = checked;
+  if (!checked && !(state.categories[idx].wearDays > 0)) state.categories[idx].wearDays = 5;
+  saveState(); renderAdvCategories();
+}
+function updateCatWearDays(idx, val) { state.categories[idx].wearDays = Math.max(1, parseInt(val, 10) || 1); saveState(); }
+
+function addCustomCategoryFromAdv() {
+  const name = document.getElementById('newCatName').value.trim(); if (!name) return alert('Enter category name.');
+  const id = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now().toString().slice(-3);
+  state.categories.push({
+    id, en: name, cs: name,
+    washable: document.getElementById('newCatWashable').checked,
+    noAutoWash: !document.getElementById('newCatWashable').checked,
+    usesThermal: document.getElementById('newCatThermal').checked,
+    wearDays: Math.max(1, parseInt(document.getElementById('newCatDays').value, 10) || 2)
+  });
+  document.getElementById('newCatName').value = '';
+  saveState(); populateCategorySelect(); renderAdvCategories(); renderWardrobe();
+}
+function quickAddCategory() {
+  const name = prompt(state.lang==='cs' ? 'Název nové kategorie:' : 'New category name:');
+  if (!name || !name.trim()) return;
+  const id = 'custom_' + Date.now().toString().slice(-4);
+  state.categories.push({ id, en: name.trim(), cs: name.trim(), washable: true, noAutoWash: false, usesThermal: true, wearDays: 2 });
+  saveState(); populateCategorySelect(); document.getElementById('itemCat').value = id; onItemCatChange();
+}
+function renderStyleMemory() {
+  const m = state.styleMemory, el = document.getElementById('styleMemoryList');
+  if (!m.likes.length && !m.dislikes.length) { el.textContent = 'No feedback yet. Use 👍 / 👎 on AI outfits.'; return; }
+  el.innerHTML = `<div><strong>Likes:</strong> ${m.likes.slice(-5).join(', ') || '—'}</div><div><strong>Dislikes:</strong> ${m.dislikes.slice(-5).join(', ') || '—'}</div>`;
+}
+function clearStyleMemory() { state.styleMemory = { likes: [], dislikes: [] }; saveState(); renderStyleMemory(); }
+
+// ================= ADD / EDIT ITEM & FULL-BODY AVATAR =================
+function onItemCatChange() {
+  const cObj = getCat(document.getElementById('itemCat').value);
+  document.getElementById('itemUseThermal').checked = !!cObj.usesThermal;
+  document.getElementById('thermalCatHint').textContent = cObj.usesThermal
+    ? 'Recommended for jackets, hoodies, pants, shorts' : 'Off by default for base layers & accessories';
+  document.getElementById('itemSeason').value = cObj.id === 'shorts' ? 'summer' : cObj.id === 'outerwear' ? 'mid' : 'autumn';
+  applyPresetFromSeason(); toggleThermalFields();
+}
+function toggleThermalFields() { document.getElementById('thermalFieldsWrap').style.display = document.getElementById('itemUseThermal').checked ? 'block' : 'none'; }
+function applyPresetFromSeason() {
+  const p = SEASONS[document.getElementById('itemSeason').value] || SEASONS.autumn;
+  document.getElementById('itemTempMin').value = p.min; document.getElementById('itemTempMax').value = p.max;
+}
+function openAddModal() {
+  editingItemId = null; document.getElementById('addModalHeader').textContent = t('addItemTitle');
+  draftFront = ''; draftBack = ''; renderDraftSlots();
+  ['itemName','itemSize','itemColor','itemStyle','itemNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('itemCat').value = 'outerwear'; onItemCatChange();
+  document.getElementById('addModal').classList.add('open');
+}
+function openEditModal(id) {
+  const w = state.wardrobe.find(x => x.id === id); if (!w) return;
+  editingItemId = id; document.getElementById('addModalHeader').textContent = t('editItemTitle');
+  draftFront = w.frontImg || ''; draftBack = w.backImg || ''; renderDraftSlots();
+  document.getElementById('itemName').value = w.name || '';
+  document.getElementById('itemCat').value = w.cat || 'tshirts';
+  document.getElementById('itemSize').value = w.size || '';
+  document.getElementById('itemColor').value = w.color || '';
+  document.getElementById('itemStyle').value = w.style || '';
+  document.getElementById('itemNotes').value = w.notes || '';
+  document.getElementById('itemUseThermal').checked = !!w.useThermal;
+  document.getElementById('itemSeason').value = (w.season && w.season !== 'any') ? w.season : 'autumn';
+  document.getElementById('itemTempMin').value = w.tempMin ?? 5;
+  document.getElementById('itemTempMax').value = w.tempMax ?? 20;
+  toggleThermalFields(); document.getElementById('addModal').classList.add('open');
+}
+function renderDraftSlots() {
+  document.getElementById('frontPreviewWrap').innerHTML = draftFront ? `<img src="${draftFront}">` : `<div style="font-size:11px;color:var(--muted);padding:18px 0;">No photo</div>`;
+  document.getElementById('backPreviewWrap').innerHTML = draftBack ? `<img src="${draftBack}">` : `<div style="font-size:11px;color:var(--muted);padding:18px 0;">Optional</div>`;
+  document.getElementById('aiScanBtn').style.display = (draftFront && hasLiveAI()) ? 'flex' : 'none';
+}
+function clearBackDraft() { draftBack = ''; renderDraftSlots(); }
+
+async function startPhotoCapture(target, source) {
+  captureTarget = target;
+  if (source === 'gallery') { const inp = document.getElementById('hiddenFileInput'); inp.removeAttribute('capture'); inp.value = ''; inp.click(); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: target === 'avatar' ? 'user' : 'environment' } });
+    document.getElementById('cameraVideo').srcObject = camStream;
+    document.getElementById('cameraModal').classList.add('open');
+  } catch (e) { fallbackNativeCamera(); }
+}
+function fallbackNativeCamera() {
+  stopCamera();
+  const inp = document.getElementById('hiddenFileInput');
+  inp.setAttribute('capture', captureTarget === 'avatar' ? 'user' : 'environment');
+  inp.value = ''; inp.click();
+}
+function stopCamera() { if (camStream) { camStream.getTracks().forEach(tr => tr.stop()); camStream = null; } closeModal('cameraModal'); }
+
+function processAvatarFull(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    const maxH = 720;
+    const scale = Math.min(1, maxH / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    state.profile.avatarImg = c.toDataURL('image/jpeg', 0.8);
+    saveState(); renderSettingsAvatar();
+  };
+  img.src = dataUrl;
+}
+
+function snapCamera() {
+  const v = document.getElementById('cameraVideo');
+  const c = document.createElement('canvas'); c.width = v.videoWidth || 640; c.height = v.videoHeight || 850;
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  const url = c.toDataURL('image/jpeg', 0.9); stopCamera();
+  if (captureTarget === 'avatar') processAvatarFull(url); else openCropper(url);
+}
+function onFileSelected(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { if (captureTarget === 'avatar') processAvatarFull(ev.target.result); else openCropper(ev.target.result); };
+  r.readAsDataURL(f);
+}
+function openCropper(dataUrl) {
+  cropImgObj = new Image();
+  cropImgObj.onload = () => { cropState = { x:0, y:0, zoom:1, dragging:false, lx:0, ly:0 }; document.getElementById('cropZoom').value = 1; document.getElementById('cropModal').classList.add('open'); renderCrop(); };
+  cropImgObj.src = dataUrl;
+}
+function renderCrop() {
+  if (!cropImgObj) return;
+  cropState.zoom = parseFloat(document.getElementById('cropZoom').value);
+  const canvas = document.getElementById('cropCanvas'), ctx = canvas.getContext('2d'), S = 260;
+  ctx.fillStyle = '#09090b'; ctx.fillRect(0, 0, S, S);
+  const scale = Math.max(S / cropImgObj.width, S / cropImgObj.height) * cropState.zoom;
+  const w = cropImgObj.width * scale, h = cropImgObj.height * scale;
+  ctx.drawImage(cropImgObj, (S - w) / 2 + cropState.x, (S - h) / 2 + cropState.y, w, h);
+}
+(function bindCropDrag() {
+  const stage = document.getElementById('cropStage');
+  const start = (x, y) => { cropState.dragging = true; cropState.lx = x; cropState.ly = y; };
+  const move = (x, y) => { if (!cropState.dragging) return; cropState.x += (x - cropState.lx); cropState.y += (y - cropState.ly); cropState.lx = x; cropState.ly = y; renderCrop(); };
+  const end = () => { cropState.dragging = false; };
+  stage.addEventListener('mousedown', e => start(e.clientX, e.clientY)); window.addEventListener('mousemove', e => move(e.clientX, e.clientY)); window.addEventListener('mouseup', end);
+  stage.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY));
+  stage.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  stage.addEventListener('touchend', end);
+})();
+function confirmCrop() {
+  const out = document.createElement('canvas'); out.width = 420; out.height = 420;
+  out.getContext('2d').drawImage(document.getElementById('cropCanvas'), 0, 0, 420, 420);
+  const result = out.toDataURL('image/jpeg', 0.78); closeModal('cropModal');
+  if (captureTarget === 'front') { draftFront = result; renderDraftSlots(); }
+  else if (captureTarget === 'back') { draftBack = result; renderDraftSlots(); }
+}
+
+async function analyzePhotoWithAI() {
+  const btn = document.getElementById('aiScanBtn'); btn.textContent = 'Analyzing with HERON AI...';
+  try {
+    const catIds = state.categories.map(c => c.id).join(', ');
+    const parts = [{ text: `Analyze photos of ONE clothing item (first is front, optional second is back). Return ONLY raw JSON: {"name":"","cat":"exact id from: ${catIds}","season":"winter|mid|autumn|summer|any","tempMin":5,"tempMax":18,"color":"","style":"","notes":""}. Thin windbreakers are 'mid' 8-18°C, NOT heavy winter. Base layers/tees/accessories are 'any'. Language: ${state.lang==='cs'?'Czech':'English'}.` }];
+    parts.push({ inline_data: { mime_type: 'image/jpeg', data: draftFront.split(',')[1] } });
+    if (draftBack) parts.push({ inline_data: { mime_type: 'image/jpeg', data: draftBack.split(',')[1] } });
+    const raw = await callGeminiAI(parts);
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('itemName').value = p.name || '';
+    if (state.categories.some(c => c.id === p.cat)) { document.getElementById('itemCat').value = p.cat; onItemCatChange(); }
+    if (p.season && p.season !== 'any' && getCat(p.cat).usesThermal) {
+      document.getElementById('itemUseThermal').checked = true;
+      document.getElementById('itemSeason').value = p.season;
+      document.getElementById('itemTempMin').value = p.tempMin;
+      document.getElementById('itemTempMax').value = p.tempMax;
+      toggleThermalFields();
+    }
+    document.getElementById('itemColor').value = p.color || '';
+    document.getElementById('itemStyle').value = p.style || '';
+    document.getElementById('itemNotes').value = p.notes || '';
+  } catch (e) { alert('AI Error: ' + e.message); }
+  btn.textContent = t('aiAutoFill');
+}
+
+function saveNewItem() {
+  const name = document.getElementById('itemName').value.trim(); if (!name) return alert('Enter item name.');
+  const cat = document.getElementById('itemCat').value;
+  const useThermal = document.getElementById('itemUseThermal').checked;
+  const season = useThermal ? document.getElementById('itemSeason').value : 'any';
+  const tMin = parseInt(document.getElementById('itemTempMin').value, 10);
+  const tMax = parseInt(document.getElementById('itemTempMax').value, 10);
+
+  const payload = {
+    name, cat, useThermal, season,
+    tempMin: useThermal && !isNaN(tMin) ? tMin : -20,
+    tempMax: useThermal && !isNaN(tMax) ? tMax : 40,
+    size: document.getElementById('itemSize').value.trim(),
+    color: document.getElementById('itemColor').value.trim() || 'Multi',
+    style: document.getElementById('itemStyle').value.trim() || 'Casual',
+    notes: document.getElementById('itemNotes').value.trim(),
+    frontImg: draftFront || makeGraphicCard(name.slice(0,14).toUpperCase(), catLabel(cat), '#18181b', '#52525b'),
+    backImg: draftBack
+  };
+
+  if (editingItemId) {
+    const idx = state.wardrobe.findIndex(x => x.id === editingItemId);
+    if (idx !== -1) state.wardrobe[idx] = { ...state.wardrobe[idx], ...payload };
+  } else {
+    state.wardrobe.unshift({ id: 'w' + Date.now(), fav: false, washUntil: 0, wearCount: 0, wearsSinceWash: 0, ...payload });
+  }
+  saveState(); closeModal('addModal'); renderWardrobe();
+}
+
+// ================= WASHING MACHINE =================
+function openWashModal(id) {
+  currentWashId = id;
+  document.getElementById('washItemName').textContent = state.wardrobe.find(x => x.id === id).name;
+  document.getElementById('washModal').classList.add('open');
+}
+function setWashHours(h) { document.getElementById('washHoursInput').value = h; }
+function confirmWash() {
+  const h = parseFloat(document.getElementById('washHoursInput').value) || 24;
+  const w = state.wardrobe.find(x => x.id === currentWashId);
+  if (w) { w.washUntil = Date.now() + h * 3600000; w.wearsSinceWash = 0; }
+  saveState(); closeModal('washModal'); renderWardrobe();
+}
+function clearWash() {
+  const w = state.wardrobe.find(x => x.id === currentWashId);
+  if (w) { w.washUntil = 0; w.wearsSinceWash = 0; }
+  saveState(); closeModal('washModal'); renderWardrobe();
+}
+
+// ================= AI STYLIST =================
+function setAiMode(mode) {
+  ['Quick','Chat','Pack'].forEach(m => {
+    const low = m.toLowerCase();
+    document.getElementById('seg'+m).classList.toggle('active', mode===low);
+    document.getElementById(low+'Box').style.display = mode===low ? 'block' : 'none';
+  });
+  document.getElementById('aiResults').innerHTML = '';
+  document.getElementById('aiStatus').textContent = '';
+}
+function renderOccasionChips() {
+  const occs = state.lang === 'cs' ? ['Do školy', 'Na rande', 'Divadlo / Formal', 'Ven s kámoši', 'Chill / Sport'] : ['School', 'Date', 'Theater / Formal', 'Hangout', 'Chill / Sport'];
+  selectedOccasion = occs[0];
+  document.getElementById('occasionChips').innerHTML = occs.map((o, i) => `<button class="chip ${i===0?'active':''}" onclick="pickOcc(this,'${o}')">${o}</button>`).join('');
+}
+function pickOcc(btn, occ) { selectedOccasion = occ; document.querySelectorAll('#occasionChips .chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); }
+
+async function generateOutfits(isQuick) {
+  const available = state.wardrobe.filter(w => !isWashing(w));
+  const status = document.getElementById('aiStatus'), results = document.getElementById('aiResults');
+  if (available.length < 2) { results.innerHTML = `<div class="empty">Not enough clean items available.</div>`; return; }
+
+  const req = isQuick ? `Occasion: ${selectedOccasion}. Extra: ${document.getElementById('quickNote').value || 'none'}` : document.getElementById('chatPrompt').value;
+  const curTemp = Math.round(state.weather.temp);
+  const curSeason = curTemp <= 5 ? 'winter' : curTemp <= 15 ? 'autumn' : curTemp <= 21 ? 'spring' : 'summer';
+
+  status.textContent = hasLiveAI() ? `HERON Cloud AI styling for ${curTemp}°C...` : `Demo Mode building fits for ${curTemp}°C...`;
+  results.innerHTML = '';
+
+  let generated = [];
+  if (hasLiveAI()) {
+    try {
+      const listStr = available.map(w => `${w.id}: ${w.name} [cat:${w.cat}, ${w.useThermal ? `comfort:${w.tempMin}°C..${w.tempMax}°C` : 'all-weather/layerable'}, size:${w.size}, color:${w.color}, style:${w.style}, notes:"${w.notes}"]`).join('\n');
+      const memStr = `Liked: ${state.styleMemory.likes.slice(-5).join('; ') || 'none'}. Disliked: ${state.styleMemory.dislikes.slice(-5).join('; ') || 'none'}.`;
+      const recentStr = state.wearHistory.slice(0, 4).map(h => `${h.date}: ${h.outfitName}`).join(', ') || 'none';
+      const prompt = `You are a practical fashion AI stylist for HERON WearGo.
+User: ${state.profile.gender}, age ${state.profile.age}, ${state.profile.body}, ${state.profile.look}, style: ${state.profile.style}.
+Style Memory: ${memStr}
+Recently worn (avoid exact repeats): ${recentStr}
+Current local weather: ${curTemp}°C in ${state.weather.city}.
+RULES: 1) Items marked 'all-weather/layerable' CAN be worn in winter as base layers. 2) Respect 'comfort' temp limits on outerwear/shorts/pants and item notes.
+Request: ${req}.
+Available CLEAN wardrobe items:\n${listStr}
+Return ONLY raw JSON array of ${isQuick ? 3 : 1} outfits using ONLY the IDs above:
+[{"name":"...","style":"...","rating":"9.3/10","occasion":"...","season":"winter|mid|autumn|spring|summer","tempMin":0,"tempMax":12,"items":["w1","w3"],"note":"concise explanation in ${state.lang==='cs'?'Czech':'English'}"}]`;
+      const raw = await callGeminiAI([{ text: prompt }]);
+      generated = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    } catch (e) { status.textContent = 'AI Error: ' + e.message; return; }
+  } else {
+    const outerwear = available.filter(w => w.cat === 'outerwear' && isItemSuitableForTemp(w, curTemp));
+    const tops = available.filter(w => ['hoodies','tshirts','shirts'].includes(w.cat) && isItemSuitableForTemp(w, curTemp));
+    const bottoms = available.filter(w => (curTemp < 18 ? w.cat === 'pants' : ['shorts','pants'].includes(w.cat)) && isItemSuitableForTemp(w, curTemp));
+    const shoes = available.filter(w => w.cat === 'shoes');
+    const count = isQuick ? 3 : 1;
+    for (let i = 0; i < count; i++) {
+      const jacket = (curTemp < 14 && outerwear.length) ? outerwear[i % outerwear.length] : null;
+      const pick = [jacket, tops[i % Math.max(1, tops.length)], bottoms[i % Math.max(1, bottoms.length)], shoes[0]].filter(Boolean).map(x => x.id);
+      generated.push({
+        name: `${selectedOccasion} Fit #${i+1}`, style: 'Streetwear', rating: (9.4 - i*0.2).toFixed(1) + '/10',
+        occasion: selectedOccasion, season: curSeason, tempMin: curTemp - 4, tempMax: curTemp + 5,
+        items: [...new Set(pick)], note: `Demo fit for ${curTemp}°C. Sign in to HERON Cloud for live AI.`
+      });
+    }
+  }
+
+  status.textContent = ''; window._lastGen = generated;
+  results.innerHTML = generated.map((o, idx) => {
+    const items = o.items.map(id => state.wardrobe.find(w => w.id === id)).filter(Boolean);
+    const sObj = SEASONS[o.season] || SEASONS.autumn;
+    return `
+      <div class="ai-card">
+        <div class="row-between">
+          <strong style="font-size:14px;">${o.name}</strong>
+          <span class="pill">${sObj.ico} ${o.tempMin}°–${o.tempMax}°C</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;">${o.style} · ${o.occasion} · ${o.rating}</div>
+        <div class="mini-row">${items.map(w => `<div class="mini-item"><img src="${w.frontImg}"><span>${w.name}</span></div>`).join('')}</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">${o.note}</p>
+        <div class="row-between">
+          <button class="btn btn-sm" onclick="saveGenOutfit(${idx}, this)">${t('saveToHome')}</button>
+          <div class="row-gap">
+            <button class="icon-btn" onclick="rateStyleMemory(${idx}, true, this)">${SVG.thumbUp}</button>
+            <button class="icon-btn" onclick="rateStyleMemory(${idx}, false, this)">${SVG.thumbDown}</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function rateStyleMemory(idx, liked, btn) {
+  const o = window._lastGen[idx]; if (!o) return;
+  const tag = `${o.name} (${o.style})`;
+  if (liked) state.styleMemory.likes.push(tag); else state.styleMemory.dislikes.push(tag);
+  saveState(); btn.style.color = liked ? 'var(--ok)' : 'var(--danger)'; btn.style.borderColor = liked ? 'var(--ok)' : 'var(--danger)';
+}
+async function saveGenOutfit(idx, btn) {
+  const o = window._lastGen[idx];
+  const collage = await buildCollage(o.items, 'front');
+  state.outfits.unshift({ ...o, id: 'o' + Date.now(), collage });
+  saveState(); btn.textContent = t('saved'); btn.disabled = true;
+}
+
+// ================= PACK MY BAG =================
+async function generatePackingList() {
+  const dest = document.getElementById('packDest').value.trim() || 'Trip';
+  const days = Math.max(1, parseInt(document.getElementById('packDays').value, 10) || 5);
+  const notes = document.getElementById('packNotes').value.trim();
+  const status = document.getElementById('aiStatus'), results = document.getElementById('aiResults');
+
+  status.textContent = `Checking forecast for ${dest} (${days}d)...`; results.innerHTML = '';
+
+  let forecastSummary = `~${Math.round(state.weather.temp)}°C`, avgTemp = state.weather.temp;
+  try {
+    const geo = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(dest)}&count=1`)).json();
+    if (geo.results && geo.results.length) {
+      const g = geo.results[0], fcDays = Math.min(days, 14);
+      const fc = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&daily=temperature_2m_max,temperature_2m_min&forecast_days=${fcDays}&timezone=auto`)).json();
+      const low = Math.round(Math.min(...fc.daily.temperature_2m_min)), high = Math.round(Math.max(...fc.daily.temperature_2m_max));
+      avgTemp = Math.round((low + high) / 2); forecastSummary = `${g.name}: ${low}°C to ${high}°C`;
+    }
+  } catch (e) {}
+
+  const qtyCalc = state.categories.filter(c => c.washable && !c.noAutoWash && c.wearDays > 0).map(c => {
+    const needed = Math.min(days, Math.ceil(days / c.wearDays));
+    return `${c.en}: ~${needed} pcs (${c.wearDays}d cycle)`;
+  }).join(', ');
+
+  let plan = null;
+  if (hasLiveAI()) {
+    status.textContent = `HERON AI packing your bag for ${forecastSummary}...`;
+    try {
+      const listStr = state.wardrobe.map(w => `${w.id}: ${w.name} [cat:${w.cat}, ${w.useThermal ? `${w.tempMin}..${w.tempMax}°C` : 'all-weather'}, wash:${isWashing(w)?'IN_WASHER':'clean'}, notes:"${w.notes}"]`).join('\n');
+      const prompt = `You are HERON WearGo's "Pack My Bag" travel stylist.
+Trip: ${dest} for ${days} days. Forecast: ${forecastSummary}. Activities: ${notes || 'general'}.
+Wear cycle math: ${qtyCalc}.
+Wardrobe:\n${listStr}
+Return ONLY raw JSON: {"summary":"short 1-line summary","packFromWardrobe":["w1","w3"],"missingToBuyOrAdd":["4x Socks","Swim shorts"]}. Language: ${state.lang==='cs'?'Czech':'English'}.`;
+      const raw = await callGeminiAI([{ text: prompt }]);
+      plan = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    } catch (e) { status.textContent = 'AI Error: ' + e.message; return; }
+  } else {
+    const picked = state.wardrobe.filter(w => isItemSuitableForTemp(w, avgTemp)).map(w => w.id);
+    plan = {
+      summary: `Packing list for ${dest} (${days}d · ${forecastSummary}).`,
+      packFromWardrobe: picked,
+      missingToBuyOrAdd: [`${days}× Socks & Underwear`, `${Math.ceil(days / (getCat('tshirts').wearDays||1))}× T-Shirts`]
+    };
+  }
+
+  status.textContent = '';
+  const wardrobePicks = (plan.packFromWardrobe || []).map(id => state.wardrobe.find(w => w.id === id)).filter(Boolean);
+  results.innerHTML = `
+    <div class="ai-card">
+      <div class="row-between" style="margin-bottom:6px;">
+        <strong style="font-size:14px;">${dest} · ${days}d</strong>
+        <span class="pill match">${forecastSummary}</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">${plan.summary}</p>
+      <h4 style="font-size:11px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">From Your Fitting Room (${wardrobePicks.length})</h4>
+      ${wardrobePicks.map(w => `
+        <div class="pack-row" onclick="this.classList.toggle('done')">
+          <div class="pack-check">✓</div>
+          <img src="${w.frontImg}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;">
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;">${w.name}</div>
+            <div style="font-size:10px;color:var(--muted);">${catLabel(w.cat)}${isWashing(w) ? ' · ⚠️ In washer!' : ''}</div>
+          </div>
+        </div>`).join('')}
+      ${(plan.missingToBuyOrAdd && plan.missingToBuyOrAdd.length) ? `
+        <h4 style="font-size:11px;text-transform:uppercase;color:var(--muted);margin:12px 0 6px;">Quantities & Extras</h4>
+        ${plan.missingToBuyOrAdd.map(m => `<div class="pack-row" onclick="this.classList.toggle('done')"><div class="pack-check">✓</div><div style="font-size:12px;">${m}</div></div>`).join('')}
+      ` : ''}
+    </div>`;
+}
+
+// ================= PROFILE & INIT =================
+function hydrateProfileInputs() {
+  document.getElementById('profGender').value = state.profile.gender || 'Male';
+  document.getElementById('profAge').value = state.profile.age;
+  document.getElementById('profBody').value = state.profile.body;
+  document.getElementById('profLook').value = state.profile.look;
+  document.getElementById('profStyle').value = state.profile.style;
+}
+function renderSettingsAvatar() {
+  const box = document.getElementById('settingsAvatarThumb');
+  box.innerHTML = state.profile.avatarImg ? `<img src="${state.profile.avatarImg}" style="width:100%;height:100%;object-fit:contain;">` : SVG.user;
+}
+function updateModeBadge() {
+  const b = document.getElementById('modeBadge');
+  const h = document.getElementById('aiEngineHint');
+  if (hasLiveAI()) {
+    b.textContent = 'HERON Cloud AI'; b.className = 'pill match';
+    if (h) h.textContent = 'Connected to secure HERON Cloud AI proxy. All vision & styling features active.';
+  } else {
+    b.textContent = 'Demo Mode'; b.className = 'pill';
+    if (h) h.textContent = 'Sign in to HERON Cloud above to automatically enable built-in Gemini AI (no API key needed).';
+  }
+}
+function saveSettings() {
+  state.profile.gender = document.getElementById('profGender').value;
+  state.profile.age = document.getElementById('profAge').value;
+  state.profile.body = document.getElementById('profBody').value;
+  state.profile.look = document.getElementById('profLook').value;
+  state.profile.style = document.getElementById('profStyle').value;
+  saveState(); alert('Saved!');
+}
+function resetDemo() { localStorage.removeItem('wardrobe_v2'); location.reload(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.getElementById('icoBrand').innerHTML = SVG.heron;
+document.getElementById('navHome').innerHTML = SVG.home;
+document.getElementById('navRoom').innerHTML = SVG.room;
+document.getElementById('navAi').innerHTML = SVG.spark;
+document.getElementById('navProf').innerHTML = SVG.user;
+document.getElementById('icoPlusBtn').innerHTML = SVG.plus;
+document.getElementById('icoBuildBtn').innerHTML = SVG.layers;
+document.getElementById('icoInsightsBtn').innerHTML = SVG.chart;
+document.getElementById('icoSearch').innerHTML = SVG.search;
+
+hydrateProfileInputs();
+updateModeBadge();
+renderSettingsAvatar();
+applyLang();
+initSupabase();
+if (Date.now() - (state.weather.updated || 0) > 1800000) {
+  fetchWeatherCoords(50.0755, 14.4378, state.weather.city || 'Prague');
+}
+</script>
+</body>
+</html>
